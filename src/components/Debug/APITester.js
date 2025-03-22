@@ -81,7 +81,7 @@ const InfoRow = styled.div`
 `;
 
 const APITester = () => {
-  const [url, setUrl] = useState('https://inventario-server-production-fc8d.up.railway.app/api/auth/users');
+  const [url, setUrl] = useState('http://localhost:5000/api/auth/users');
   const [method, setMethod] = useState('GET');
   const [token, setToken] = useState(localStorage.getItem('token') || '');
   const [body, setBody] = useState('');
@@ -153,7 +153,7 @@ const APITester = () => {
             type="text" 
             value={url} 
             onChange={(e) => setUrl(e.target.value)} 
-            placeholder="Ej: https://inventario-server-production-fc8d.up.railway.app/api/auth/users"
+            placeholder="Ej: http://localhost:5000/api/auth/users"
           />
         </FormGroup>
         

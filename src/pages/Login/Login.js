@@ -95,11 +95,22 @@ const ErrorMessage = styled.div`
   border-radius: 4px;
 `;
 
-const Logo = styled.img`
-  display: block;
+const Logo = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin: 0 auto 30px;
-  max-width: 150px;
+`;
+const LogoImage = styled.img`
+  max-width: 80px;
   height: auto;
+`;
+
+const LogoText = styled.span`
+  font-size: 1.8rem;
+  font-weight: bold;
+  margin-left: 10px;
+  color: ${props => props.theme.colors.secondary};
 `;
 
 const Login = () => {
@@ -117,7 +128,7 @@ console.log("URL de la API:", process.env.REACT_APP_API_URL);
 
 const testAPIConnection = async () => {
   try {
-    const testUrl = `${process.env.REACT_APP_API_URL || 'https://inventario-server-production-fc8d.up.railway.app'}/api/test`;
+    const testUrl = `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/test`;
     console.log("Intentando conectar a:", testUrl);
     const response = await axios.get(testUrl);
     console.log("Respuesta del servidor:", response.data);
@@ -165,7 +176,10 @@ testAPIConnection();
   
   return (
     <Container>
-      <Logo src="/logotipoPng2.png" alt="Reconstructora Antigua Jr." />
+     <Logo>
+      <LogoImage src="/logoMuestra.png" alt="Inventory System" />
+      <LogoText>InventoryApp</LogoText>
+    </Logo>
       <Title>Iniciar Sesión</Title>
       
       {(error || formError) && <ErrorMessage>{error || formError}</ErrorMessage>}

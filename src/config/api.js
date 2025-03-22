@@ -1,6 +1,6 @@
 // Crear un nuevo archivo src/config/api.js
 
-const API_URL = "https://inventario-server-production-fc8d.up.railway.app";
+const API_URL = "http://localhost:5000";
 
 export default API_URL;
 

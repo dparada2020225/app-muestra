@@ -24,7 +24,7 @@ export const AuthProvider = ({ children }) => {
   // Tiempo de expiración de la caché: 1 minuto (60000 ms)
   const CACHE_EXPIRY_TIME = 60000;
   
-  const API_URL = process.env.REACT_APP_API_URL || 'https://inventario-server-production-fc8d.up.railway.app';
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
   // Configurar el token en los headers por defecto
   useEffect(() => {

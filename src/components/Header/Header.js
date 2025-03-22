@@ -20,15 +20,25 @@ const Content = styled.div`
   align-items: center;
 `;
 
+
+const LogoImage = styled.img`
+  height: 32px; // Tamaño ajustado para que se vea mejor en la barra de navegación
+  width: auto;
+  display: block;
+  margin-right: 10px; // Añadir espacio a la derecha
+`;
+
 const Logo = styled(Link)`
   text-decoration: none;
   display: flex;
   align-items: center;
+  padding: 5px 0; // Añadir padding vertical para dar más espacio
 `;
 
-const LogoImage = styled.img`
-  height: 42px;
-  display: block;
+
+const LogoContainer = styled.div`
+  display: flex;
+  align-items: center;
 `;
 
 const Nav = styled.nav`
@@ -45,7 +55,7 @@ const NavLink = styled(Link)`
   transition: all 0.2s ease;
   
   &:hover {
-    background-color: rgba(150, 255, 0, 0.15);
+    background-color: rgba(59, 130, 246, 0.15);
     transform: translateY(-2px);
   }
 `;
@@ -80,7 +90,7 @@ const DropdownButton = styled.button`
   align-items: center;
   
   &:hover {
-    background-color: rgba(150, 255, 0, 0.15);
+    background-color: rgba(59, 130, 246, 0.15);
     transform: translateY(-2px);
   }
   
@@ -160,9 +170,11 @@ const Header = () => {
   return (
     <HeaderContainer>
       <Content>
-        <Logo to="/">
-          <LogoImage src="/logotipoPng2.png" alt="Reconstructora Antigua Jr." />
-        </Logo>
+      <Logo to="/">
+        <LogoContainer>
+          <LogoImage src="/logoMuestraInvertida.png" alt="Inventory System" />
+        </LogoContainer>
+      </Logo>
         <Nav>
           {isAuthenticated ? (
             <>
