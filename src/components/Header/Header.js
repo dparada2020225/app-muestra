@@ -170,7 +170,7 @@ const Header = () => {
       <Content>
       <Logo to="/">
         <LogoContainer>
-          <LogoImage src="/logoMuestraInvertida.png" alt="Inventory System" />
+          <LogoImage src="/logoMuestraInvertidartida.png" alt="Inventory System" />
         </LogoContainer>
       </Logo>
         <Nav>
