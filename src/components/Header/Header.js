@@ -20,21 +20,19 @@ const Content = styled.div`
   align-items: center;
 `;
 
-
 const LogoImage = styled.img`
-  height: 32px; // Tamaño ajustado para que se vea mejor en la barra de navegación
+  height: 45px; // Aumentado de 32px a 45px para un logo más grande
   width: auto;
   display: block;
-  margin-right: 10px; // Añadir espacio a la derecha
+  margin-right: 12px; // Aumentado para dar más espacio a la derecha
 `;
 
 const Logo = styled(Link)`
   text-decoration: none;
   display: flex;
   align-items: center;
-  padding: 5px 0; // Añadir padding vertical para dar más espacio
+  padding: 5px 0; // Mantenemos el padding vertical para no hacer la barra muy gruesa
 `;
-
 
 const LogoContainer = styled.div`
   display: flex;

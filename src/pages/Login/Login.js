@@ -101,16 +101,19 @@ const Logo = styled.div`
   justify-content: center;
   margin: 0 auto 30px;
 `;
+
 const LogoImage = styled.img`
-  max-width: 80px;
+  max-width: 100px; // Aumentado de 80px a 100px
   height: auto;
 `;
 
+// Mantenemos el componente por si se necesita en el futuro
 const LogoText = styled.span`
   font-size: 1.8rem;
   font-weight: bold;
   margin-left: 10px;
   color: ${props => props.theme.colors.secondary};
+  display: none; // Ocultar el texto
 `;
 
 const Login = () => {
@@ -178,7 +181,6 @@ testAPIConnection();
     <Container>
      <Logo>
       <LogoImage src="/logoMuestra.png" alt="Inventory System" />
-      <LogoText>InventoryApp</LogoText>
     </Logo>
       <Title>Iniciar Sesión</Title>
       
