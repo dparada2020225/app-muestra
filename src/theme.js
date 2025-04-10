@@ -1,11 +1,15 @@
 // src/theme.js
 export const theme = {
   colors: {
-    primary: '#3b82f6', // Cambiado de verde neón (#96ff00) a azul
-    primaryHover: '#2563eb', // Azul más oscuro para hover
-    primaryDark: '#1d4ed8', // Azul aún más oscuro
-    secondary: '#333333', // Un poco más oscuro para mejor contraste
-    secondaryHover: '#444444',
+    // Usar variables CSS para colores principales (definidos por TenantContext)
+    primary: 'var(--primary-color, #3b82f6)', // Fallback a azul
+    primaryHover: 'var(--primary-hover-color, #2563eb)', // Azul más oscuro para hover
+    primaryDark: 'var(--primary-dark-color, #1d4ed8)', // Azul aún más oscuro
+    secondary: 'var(--secondary-color, #333333)', // Un poco más oscuro para mejor contraste
+    secondaryHover: 'var(--secondary-hover-color, #444444)',
+    accent: 'var(--accent-color, #f59e0b)', // Color de acento predeterminado
+    
+    // Colores de fondo y texto no específicos del tenant
     background: '#f8f9fa',
     cardBackground: '#ffffff',
     text: '#222222',
@@ -40,5 +44,11 @@ export const theme = {
     medium: '8px',
     large: '12px',
     round: '50%'
+  },
+  // Función para obtener valores de tenant desde CSS Variables
+  getCssVar: (name, fallback) => {
+    if (typeof window === 'undefined') return fallback;
+    const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return value || fallback;
   }
 };

@@ -278,6 +278,7 @@ export const authService = {
   login: async (credentials) => {
     try {
       console.log('Iniciando sesión...');
+      // Usar la ruta directa, no la ruta del tenant
       const response = await axios.post(`${API_URL}/api/auth/login`, credentials);
       if (response.data.token) {
         localStorage.setItem('token', response.data.token);
@@ -296,6 +297,7 @@ export const authService = {
   register: async (userData) => {
     try {
       console.log('Registrando nuevo usuario:', userData.username);
+      // Usar la ruta directa, no la ruta del tenant
       const response = await axios.post(`${API_URL}/api/auth/register`, userData);
       console.log('Usuario registrado con éxito');
       return response.data;
@@ -310,6 +312,7 @@ export const authService = {
   getCurrentUser: async () => {
     try {
       console.log('Obteniendo información del usuario actual...');
+      // Usar la ruta directa, no la ruta del tenant
       const response = await axios.get(`${API_URL}/api/auth/me`);
       console.log('Información de usuario obtenida');
       return response.data;

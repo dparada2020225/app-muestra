@@ -49,13 +49,14 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
         return;
       }
-
+    
       try {
         console.log("Verificando token...");
-        // Usar la URL específica del tenant si está disponible
-        const url = currentTenant 
-          ? getTenantApiUrl('/auth/me')
-          : `${API_URL}/api/auth/me`;
+        
+        // CAMBIAR ESTA PARTE: No usar la URL específica del tenant para /auth/me
+        // Usar la URL directa en su lugar
+        const url = `${API_URL}/api/auth/me`;
+        console.log("Consultando ruta:", url);
         
         const res = await axios.get(url);
         console.log("Respuesta de verificación de token:", res.data);

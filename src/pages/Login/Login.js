@@ -167,9 +167,19 @@ testAPIConnection();
       return;
     }
     
-    const success = await login(formData.username, formData.password);
-    if (success) {
-      navigate('/');
+    try {
+      console.log("Intentando login con:", {username: formData.username});
+      const success = await login(formData.username, formData.password);
+      
+      if (success) {
+        console.log("Login exitoso, redirigiendo...");
+        // Usar replace: true para evitar volver al login con el botón de atrás
+        navigate('/', { replace: true });
+      } else {
+        console.log("Login falló");
+      }
+    } catch (error) {
+      console.error("Error en login:", error);
     }
   };
   

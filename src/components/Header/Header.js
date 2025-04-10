@@ -108,7 +108,7 @@ const DropdownButton = styled.button`
 `;
 
 const DropdownContent = styled.div`
-  display: ${props => (props.isOpen ? 'block' : 'none')};
+  display: ${props => (props.$isOpen ? 'block' : 'none')};
   position: absolute;
   right: 0;
   background-color: #f9f9f9;
@@ -141,6 +141,13 @@ const Badge = styled.span`
   border-radius: 10px;
   margin-left: 8px;
   text-transform: uppercase;
+`;
+
+const TenantBadge = styled(Badge)`
+  background-color: var(--primary-color);
+  padding: 3px 8px;
+  font-size: 9px;
+  margin-left: 12px;
 `;
 
 const Header = () => {
@@ -176,6 +183,9 @@ const Header = () => {
 
   // Determinar si el usuario es admin de tenant
   const isTenantAdmin = user && currentTenant && user.role === 'tenantAdmin';
+  
+  // Determinar si el usuario es un superadmin impersonando a un usuario del tenant
+  const isImpersonating = user && user.impersonatedBy;
   
   return (
     <HeaderContainer>
@@ -221,8 +231,10 @@ const Header = () => {
                   {user.username}
                   {isAdmin && <Badge color="#9c27b0">Admin</Badge>}
                   {isTenantAdmin && <Badge color="#2196f3">Tenant Admin</Badge>}
+                  {isImpersonating && <Badge color="#ff5722">Impersonando</Badge>}
+                  {currentTenant && <TenantBadge>{currentTenant.name}</TenantBadge>}
                 </DropdownButton>
-                <DropdownContent isOpen={dropdownOpen}>
+                <DropdownContent $isOpen={dropdownOpen}>
                   <DropdownItem onClick={() => {
                     setDropdownOpen(false);
                     navigate('/profile');
@@ -237,6 +249,18 @@ const Header = () => {
                       navigate('/admin/tenant-dashboard');
                     }}>
                       Panel Super Admin
+                    </DropdownItem>
+                  )}
+                  
+                  {/* Mostrar opción para finalizar impersonación si es necesario */}
+                  {isImpersonating && (
+                    <DropdownItem onClick={() => {
+                      setDropdownOpen(false);
+                      // Aquí llamarías a una función para terminar la impersonación
+                      // Por ejemplo: endImpersonation();
+                      navigate('/admin/dashboard');
+                    }}>
+                      Terminar Impersonación
                     </DropdownItem>
                   )}
                   

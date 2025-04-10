@@ -12,205 +12,32 @@ export const TenantProvider = ({ children }) => {
   const [error, setError] = useState(null);
 
   const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-
-  // Función para detectar el tenant basado en el subdominio
-  // const detectTenant = useCallback(() => {
-  //   const hostname = window.location.hostname;
-    
-  //   // Para desarrollo local (localhost), permitir especificar tenant mediante searchParams
-  //   if (hostname === 'localhost' || hostname === '127.0.0.1') {
-  //     const urlParams = new URLSearchParams(window.location.search);
-  //     const tenantParam = urlParams.get('tenant');
-      
-  //     if (tenantParam) {
-  //       return tenantParam;
-  //     }
-      
-  //     // Si no hay parámetro tenant, usar 'default' para desarrollo
-  //     return 'default';
-  //   }
-    
-  //   // En producción, extraer el tenant del subdominio
-  //   const parts = hostname.split('.');
-    
-  //   // Si es un subdominio (al menos 3 partes: tenant.domain.tld)
-  //   if (parts.length >= 3) {
-  //     return parts[0];
-  //   }
-    
-  //   // Si es dominio principal, podría ser la página de landing o registro
-  //   return null;
-  // }, []);
-
-  // Modificar la función detectTenant en TenantContext.js
-const detectTenant = useCallback(() => {
-  const hostname = window.location.hostname;
   
-  // Para desarrollo local (localhost), permitir especificar tenant mediante searchParams
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    const urlParams = new URLSearchParams(window.location.search);
-    const tenantParam = urlParams.get('tenant');
-    
-    if (tenantParam) {
-      return tenantParam;
-    }
-    
-    // MODIFICACIÓN TEMPORAL: Devolver un tenant predeterminado para desarrollo
-    console.log("Usando tenant predeterminado para desarrollo: 'default'");
-    return 'default';
-  }
-  
-  // En producción, extraer el tenant del subdominio
-  const parts = hostname.split('.');
-  
-  // Si es un subdominio (al menos 3 partes: tenant.domain.tld)
-  if (parts.length >= 3) {
-    return parts[0];
-  }
-  
-  // Si es dominio principal, podría ser la página de landing o registro
-  return null;
-}, []);
-
-  // Cargar información del tenant
-  // const fetchTenantInfo = useCallback(async (tenantId) => {
-  //   if (!tenantId) {
-  //     setCurrentTenant(null);
-  //     setLoading(false);
-  //     return;
-  //   }
-    
-  //   try {
-  //     setLoading(true);
-  //     const response = await axios.get(`${API_URL}/api/tenants/${tenantId}`);
-      
-  //     if (response.data) {
-  //       // Guardar en localStorage para acceso rápido en futuras cargas
-  //       localStorage.setItem('currentTenant', JSON.stringify(response.data));
-  //       setCurrentTenant(response.data);
-  //       setError(null);
-        
-  //       // Aplicar configuraciones específicas del tenant (tema, etc.)
-  //       applyTenantSettings(response.data);
-  //     } else {
-  //       setCurrentTenant(null);
-  //       setError('Tenant no encontrado');
-  //     }
-  //   } catch (err) {
-  //     console.error('Error al cargar información del tenant:', err);
-      
-  //     // En caso de error, intentar usar datos en caché
-  //     const cachedTenant = localStorage.getItem('currentTenant');
-  //     if (cachedTenant) {
-  //       try {
-  //         const parsedTenant = JSON.parse(cachedTenant);
-  //         if (parsedTenant.id === tenantId) {
-  //           setCurrentTenant(parsedTenant);
-  //           setError('Usando datos en caché. Algunos datos podrían no estar actualizados.');
-  //           applyTenantSettings(parsedTenant);
-  //         } else {
-  //           setCurrentTenant(null);
-  //           setError('Tenant no encontrado');
-  //         }
-  //       } catch (e) {
-  //         setCurrentTenant(null);
-  //         setError('Error al procesar datos del tenant');
-  //       }
-  //     } else {
-  //       setCurrentTenant(null);
-  //       setError('Error al cargar información del tenant');
-  //     }
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // }, [API_URL]);
-
-  // Modificar la función fetchTenantInfo en TenantContext.js
-const fetchTenantInfo = useCallback(async (tenantId) => {
-  if (!tenantId) {
-    setCurrentTenant(null);
-    setLoading(false);
-    return;
-  }
-  
-  try {
-    setLoading(true);
-    
-    // MODIFICACIÓN TEMPORAL: Simular datos del tenant para desarrollo
-    // Quitar o comentar esto cuando el backend esté listo
-    console.log("Usando datos de tenant simulados para desarrollo");
-    const mockedTenant = {
-      id: tenantId,
-      name: tenantId.charAt(0).toUpperCase() + tenantId.slice(1), // Capitalizar
-      slogan: 'Sistema de Gestión de Inventario',
-      description: 'Accede a tu cuenta para gestionar tu inventario, realizar compras, ventas y mucho más.',
-      theme: {
-        primaryColor: '#3b82f6',
-        secondaryColor: '#333333'
-      }
-    };
-    
-    localStorage.setItem('currentTenant', JSON.stringify(mockedTenant));
-    setCurrentTenant(mockedTenant);
-    setError(null);
-    setLoading(false);
-    return;
-    
-    // Cuando el backend esté listo, descomentar esto:
-    /*
-    const response = await axios.get(`${API_URL}/api/tenants/${tenantId}`);
-    
-    if (response.data) {
-      localStorage.setItem('currentTenant', JSON.stringify(response.data));
-      setCurrentTenant(response.data);
-      setError(null);
-      
-      // Aplicar configuraciones específicas del tenant (tema, etc.)
-      applyTenantSettings(response.data);
-    } else {
-      setCurrentTenant(null);
-      setError('Tenant no encontrado');
-    }
-    */
-  } catch (err) {
-    console.error('Error al cargar información del tenant:', err);
-    
-    // En caso de error, intentar usar datos en caché
-    const cachedTenant = localStorage.getItem('currentTenant');
-    if (cachedTenant) {
-      try {
-        const parsedTenant = JSON.parse(cachedTenant);
-        if (parsedTenant.id === tenantId) {
-          setCurrentTenant(parsedTenant);
-          setError('Usando datos en caché. Algunos datos podrían no estar actualizados.');
-          applyTenantSettings(parsedTenant);
-        } else {
-          setCurrentTenant(null);
-          setError('Tenant no encontrado');
-        }
-      } catch (e) {
-        setCurrentTenant(null);
-        setError('Error al procesar datos del tenant');
-      }
-    } else {
-      setCurrentTenant(null);
-      setError('Error al cargar información del tenant');
-    }
-  } finally {
-    setLoading(false);
-  }
-}, [API_URL]);
-
+  // IMPORTANTE: Definir applyTenantSettings ANTES de usarla en fetchTenantInfo
   // Aplicar configuraciones del tenant (tema, logo, etc.)
-  const applyTenantSettings = (tenant) => {
+  const applyTenantSettings = useCallback((tenant) => {
     if (!tenant) return;
     
     // Aplicar tema personalizado si existe
-    if (tenant.theme) {
-      // Aquí puedes implementar la lógica para aplicar el tema
-      // Por ejemplo, modificando CSS variables
-      document.documentElement.style.setProperty('--primary-color', tenant.theme.primaryColor || '#3b82f6');
-      document.documentElement.style.setProperty('--secondary-color', tenant.theme.secondaryColor || '#333333');
+    if (tenant.customization) {
+      // Aplicar colores primarios y secundarios como variables CSS
+      document.documentElement.style.setProperty('--primary-color', tenant.customization.primaryColor || '#3b82f6');
+      document.documentElement.style.setProperty('--secondary-color', tenant.customization.secondaryColor || '#333333');
+      
+      // También establecer otras variables CSS útiles
+      if (tenant.customization.accentColor) {
+        document.documentElement.style.setProperty('--accent-color', tenant.customization.accentColor);
+      }
+      
+      // Establecer formato de moneda si está disponible
+      if (tenant.customization.currencySymbol) {
+        document.documentElement.style.setProperty('--currency-symbol', tenant.customization.currencySymbol);
+      }
+      
+      console.log(`Aplicando tema personalizado para ${tenant.name}: `, {
+        primaryColor: tenant.customization.primaryColor,
+        secondaryColor: tenant.customization.secondaryColor
+      });
     }
     
     // Establecer el favicon y el título si existen
@@ -225,7 +52,155 @@ const fetchTenantInfo = useCallback(async (tenantId) => {
     if (tenant.name) {
       document.title = tenant.name + ' - Sistema de Inventario';
     }
-  };
+  }, []);
+
+  // Función para detectar el tenant basado en el subdominio
+  const detectTenant = useCallback(() => {
+    const hostname = window.location.hostname;
+    
+    // Para desarrollo local (localhost), permitir especificar tenant mediante searchParams
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tenantParam = urlParams.get('tenant');
+      
+      if (tenantParam) {
+        return tenantParam;
+      }
+      
+      // Extraer el subdominio de localhost
+      const parts = hostname.split('.');
+      if (parts.length > 1 && parts[0] !== 'www' && parts[0] !== 'localhost') {
+        return parts[0];
+      }
+      
+      // MODIFICACIÓN TEMPORAL: Devolver un tenant predeterminado para desarrollo
+      console.log("Usando tenant predeterminado para desarrollo: 'default'");
+      return 'default';
+    }
+    
+    // En producción, extraer el tenant del subdominio
+    const parts = hostname.split('.');
+    
+    // Si es un subdominio (al menos 3 partes: tenant.domain.tld)
+    if (parts.length >= 3) {
+      return parts[0];
+    }
+    
+    // Si es dominio principal, podría ser la página de landing o registro
+    return null;
+  }, []);
+
+  // Cargar información del tenant
+  const fetchTenantInfo = useCallback(async (tenantId) => {
+    if (!tenantId) {
+      setCurrentTenant(null);
+      setLoading(false);
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      console.log(`Intentando cargar información del tenant: ${tenantId}`);
+      
+      // Intentar obtener datos del tenant desde el servidor
+      const response = await axios.get(`${API_URL}/api/tenants/${tenantId}`);
+      
+      if (response.data) {
+        console.log("Datos del tenant recibidos:", response.data);
+        localStorage.setItem('currentTenant', JSON.stringify(response.data));
+        setCurrentTenant(response.data);
+        setError(null);
+        
+        // Aplicar configuraciones específicas del tenant
+        applyTenantSettings(response.data);
+      } else {
+        // Si estamos en desarrollo, usar datos simulados
+        if (process.env.NODE_ENV === 'development') {
+          console.log("Usando datos de tenant simulados para desarrollo");
+          const mockedTenant = {
+            id: tenantId,
+            _id: tenantId,
+            name: tenantId.charAt(0).toUpperCase() + tenantId.slice(1), // Capitalizar
+            slogan: 'Sistema de Gestión de Inventario',
+            description: 'Accede a tu cuenta para gestionar tu inventario, realizar compras, ventas y mucho más.',
+            customization: {
+              primaryColor: '#3b82f6',
+              secondaryColor: '#333333',
+              logoText: tenantId.charAt(0).toUpperCase() + tenantId.slice(1),
+              currencySymbol: 'Q',
+              dateFormat: 'DD/MM/YYYY'
+            }
+          };
+          
+          localStorage.setItem('currentTenant', JSON.stringify(mockedTenant));
+          setCurrentTenant(mockedTenant);
+          setError(null);
+          
+          // Aplicar configuraciones específicas del tenant simulado
+          applyTenantSettings(mockedTenant);
+        } else {
+          setCurrentTenant(null);
+          setError('Tenant no encontrado');
+        }
+      }
+    } catch (err) {
+      console.error('Error al cargar información del tenant:', err);
+      
+      // En caso de error, usar datos del usuario autenticado como respaldo
+      const userToken = localStorage.getItem('token');
+      if (userToken) {
+        try {
+          const decoded = JSON.parse(atob(userToken.split('.')[1]));
+          if (decoded.tenantId && decoded.tenantId === tenantId) {
+            console.log("Usando tenantId del token como respaldo");
+            
+            // Crear un tenant básico a partir del ID
+            const basicTenant = {
+              id: tenantId,
+              _id: tenantId,
+              name: "Tenant " + tenantId,
+              customization: {
+                primaryColor: '#3b82f6',
+                secondaryColor: '#333333'
+              }
+            };
+            
+            setCurrentTenant(basicTenant);
+            applyTenantSettings(basicTenant);
+            setError('Usando información básica del tenant');
+            setLoading(false);
+            return;
+          }
+        } catch (e) {
+          console.error('Error al decodificar token:', e);
+        }
+      }
+      
+      // Intentar usar caché si existe
+      const cachedTenant = localStorage.getItem('currentTenant');
+      if (cachedTenant) {
+        try {
+          const parsedTenant = JSON.parse(cachedTenant);
+          if (parsedTenant.id === tenantId || parsedTenant._id === tenantId) {
+            setCurrentTenant(parsedTenant);
+            setError('Usando datos en caché. Algunos datos podrían no estar actualizados.');
+            applyTenantSettings(parsedTenant);
+          } else {
+            setCurrentTenant(null);
+            setError('Tenant no encontrado');
+          }
+        } catch (e) {
+          setCurrentTenant(null);
+          setError('Error al procesar datos del tenant');
+        }
+      } else {
+        setCurrentTenant(null);
+        setError('Error al cargar información del tenant');
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [API_URL, applyTenantSettings]);
 
   // Inicialización al cargar el componente
   useEffect(() => {
@@ -257,10 +232,10 @@ const fetchTenantInfo = useCallback(async (tenantId) => {
 
   // Verificar si el tenant actual tiene una característica específica
   const hasTenantFeature = (featureName) => {
-    if (!currentTenant || !currentTenant.features) {
+    if (!currentTenant || !currentTenant.settings || !currentTenant.settings.features) {
       return false;
     }
-    return currentTenant.features.includes(featureName);
+    return currentTenant.settings.features[featureName] === true;
   };
 
   // Verificar si el usuario tiene un rol específico en el tenant actual
@@ -274,6 +249,15 @@ const fetchTenantInfo = useCallback(async (tenantId) => {
     return userRole && userRole.role === roleName;
   };
 
+  // Obtener un valor de configuración específico del tenant
+  const getTenantConfig = (key, defaultValue) => {
+    if (!currentTenant || !currentTenant.customization) {
+      return defaultValue;
+    }
+    
+    return currentTenant.customization[key] || defaultValue;
+  };
+
   return (
     <TenantContext.Provider value={{
       currentTenant,
@@ -282,7 +266,9 @@ const fetchTenantInfo = useCallback(async (tenantId) => {
       switchTenant,
       getTenantApiUrl,
       hasTenantFeature,
-      hasTenantRole
+      hasTenantRole,
+      getTenantConfig,
+      applyTenantSettings
     }}>
       {children}
     </TenantContext.Provider>
