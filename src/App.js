@@ -1,6 +1,6 @@
 // src/App.js
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { createGlobalStyle, ThemeProvider } from 'styled-components';
 import Dashboard from './pages/Dashboard/Dashboard';
 import Login from './pages/Login/Login';
@@ -13,6 +13,10 @@ import { theme } from './theme';
 import { AuthProvider } from './context/AuthContext';
 import { TransactionProvider } from './context/TransactionContext';
 import { ProductProvider } from './context/ProductContext';
+import { TenantProvider } from './context/TenantContext';
+import TenantRedirect from './components/TenantRedirect/TenantRedirect';
+import PublicTenantPage from './pages/PublicTenantPage/PublicTenantPage';
+import NotFound from './pages/NotFound/NotFound';
 
 const GlobalStyle = createGlobalStyle`
   body {
@@ -29,47 +33,62 @@ const GlobalStyle = createGlobalStyle`
   h1, h2, h3 {
     color: ${props => props.theme.colors.text};
   }
+
+  /* Variables CSS para configuración específica de tenant */
+  :root {
+    --primary-color: ${props => props.theme.colors.primary};
+    --secondary-color: ${props => props.theme.colors.secondary};
+  }
 `;
 
 function App() {
   return (
     <ThemeProvider theme={theme}>
       <Router>
-        <AuthProvider>
-          {/* Movimos el ProductProvider y TransactionProvider dentro de protectedRoutes 
-              para que no se inicialicen hasta que el usuario esté autenticado */}
-          <GlobalStyle />
-          <Header />
-          <Routes>
-            {/* Rutas públicas */}
-            <Route path="/login" element={<Login />} />
-            
-            {/* Rutas protegidas (requieren autenticación) */}
-            <Route element={<ProtectedRoute />}>
-              <Route path="/" element={
-                <ProductProvider>
-                  <Dashboard />
-                </ProductProvider>
-              } />
-            </Route>
-            
-            {/* Rutas solo para admin */}
-            <Route element={<ProtectedRoute requireAdmin={true} />}>
-              <Route path="/admin/users" element={<UserManagement />} />
-              <Route path="/admin/users/new" element={<Register />} />
-              <Route path="/admin/transactions" element={
-                <ProductProvider>
-                  <TransactionProvider>
-                    <TransactionsPage />
-                  </TransactionProvider>
-                </ProductProvider>
-              } />
-            </Route>
-            
-            {/* Ruta 404 */}
-            <Route path="*" element={<div style={{padding: '40px', textAlign: 'center'}}>Página no encontrada</div>} />
-          </Routes>
-        </AuthProvider>
+        {/* TenantProvider debe estar fuera para manejar rutas públicas también */}
+        <TenantProvider>
+          <AuthProvider>
+            <GlobalStyle />
+            <Header />
+            <Routes>
+              {/* TenantRedirect verifica si estamos en el dominio principal o en un subdominio */}
+              <Route path="/" element={<TenantRedirect />} />
+              
+              {/* Rutas públicas específicas del tenant */}
+              <Route path="/public" element={<PublicTenantPage />} />
+              <Route path="/login" element={<Login />} />
+              
+              {/* Rutas protegidas (requieren autenticación y tenant) */}
+              <Route element={<ProtectedRoute requireTenant={true} />}>
+                <Route path="/dashboard" element={
+                  <ProductProvider>
+                    <Dashboard />
+                  </ProductProvider>
+                } />
+              </Route>
+              
+              {/* Rutas solo para admin dentro del tenant */}
+              <Route element={<ProtectedRoute requireAdmin={true} requireTenant={true} />}>
+                <Route path="/admin/users" element={<UserManagement />} />
+                <Route path="/admin/users/new" element={<Register />} />
+                <Route path="/admin/transactions" element={
+                  <ProductProvider>
+                    <TransactionProvider>
+                      <TransactionsPage />
+                    </TransactionProvider>
+                  </ProductProvider>
+                } />
+              </Route>
+              
+              {/* Rutas específicas para el dominio principal (sin tenant) */}
+              <Route path="/register-tenant" element={<Navigate to="/register" replace />} />
+              <Route path="/register" element={<Register isTenantRegistration={true} />} />
+              
+              {/* Ruta 404 */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AuthProvider>
+        </TenantProvider>
       </Router>
     </ThemeProvider>
   );

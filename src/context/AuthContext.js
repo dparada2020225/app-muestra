@@ -2,6 +2,7 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { useTenant } from './TenantContext';
 
 const AuthContext = createContext();
 
@@ -13,6 +14,9 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+  
+  // Obtener información del tenant actual
+  const { currentTenant, getTenantApiUrl } = useTenant();
   
   // Caché para la lista de usuarios con tiempo de expiración
   const [usersCache, setUsersCache] = useState({
@@ -37,7 +41,7 @@ export const AuthProvider = ({ children }) => {
     }
   }, [token]);
 
-  // Verificar token al cargar el componente
+  // Verificar token al cargar el componente o cuando cambia el tenant
   useEffect(() => {
     const verifyToken = async () => {
       if (!token) {
@@ -48,10 +52,24 @@ export const AuthProvider = ({ children }) => {
 
       try {
         console.log("Verificando token...");
-        const res = await axios.get(`${API_URL}/api/auth/me`);
+        // Usar la URL específica del tenant si está disponible
+        const url = currentTenant 
+          ? getTenantApiUrl('/auth/me')
+          : `${API_URL}/api/auth/me`;
+        
+        const res = await axios.get(url);
         console.log("Respuesta de verificación de token:", res.data);
-        setUser(res.data);
-        setError(null);
+        
+        // Verificar si el usuario pertenece al tenant actual
+        if (currentTenant && res.data.tenantId !== currentTenant.id) {
+          console.error('El usuario no pertenece a este tenant');
+          setToken(null);
+          setUser(null);
+          setError('No tienes acceso a este tenant. Por favor inicia sesión con una cuenta válida.');
+        } else {
+          setUser(res.data);
+          setError(null);
+        }
       } catch (err) {
         console.error('Error verificando token:', err);
         // Mostrar detalles específicos del error para depuración
@@ -73,39 +91,117 @@ export const AuthProvider = ({ children }) => {
     };
 
     verifyToken();
-  }, [token, API_URL]);
+  }, [token, API_URL, currentTenant, getTenantApiUrl]);
 
-  // Iniciar sesión
-  const login = async (username, password) => {
-    try {
-      setLoading(true);
-      console.log("Iniciando sesión con:", { username });
-      const res = await axios.post(`${API_URL}/api/auth/login`, { username, password });
-      console.log("Respuesta de login:", res.data);
-      setToken(res.data.token);
-      setUser(res.data.user);
-      setError(null);
-      return true;
-    } catch (err) {
-      console.error('Error en login:', err);
-      if (err.response) {
-        console.error('Respuesta del servidor:', err.response.data);
-        setError(err.response.data.message || 'Error al iniciar sesión');
-      } else {
-        setError('Error de conexión al servidor');
-      }
-      return false;
-    } finally {
-      setLoading(false);
+  // Iniciar sesión - actualizado para incluir tenantId
+  // const login = async (username, password) => {
+  //   try {
+  //     setLoading(true);
+  //     console.log("Iniciando sesión con:", { username });
+      
+  //     // Usar la URL específica del tenant si está disponible
+  //     const url = currentTenant 
+  //       ? getTenantApiUrl('/auth/login')
+  //       : `${API_URL}/api/auth/login`;
+      
+  //     // Incluir tenantId en la solicitud si está disponible
+  //     const loginData = { 
+  //       username, 
+  //       password,
+  //       ...(currentTenant && { tenantId: currentTenant.id })
+  //     };
+      
+  //     const res = await axios.post(url, loginData);
+  //     console.log("Respuesta de login:", res.data);
+      
+  //     setToken(res.data.token);
+  //     setUser(res.data.user);
+  //     setError(null);
+  //     return true;
+  //   } catch (err) {
+  //     console.error('Error en login:', err);
+  //     if (err.response) {
+  //       console.error('Respuesta del servidor:', err.response.data);
+  //       setError(err.response.data.message || 'Error al iniciar sesión');
+  //     } else {
+  //       setError('Error de conexión al servidor');
+  //     }
+  //     return false;
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  // Modificar la función login en AuthContext.js
+const login = async (username, password) => {
+  try {
+    setLoading(true);
+    console.log("Iniciando sesión con:", { username });
+    
+    // URL base para la solicitud de login
+    const url = `${API_URL}/api/auth/login`;
+    
+    // Datos básicos de login sin tenant
+    let loginData = { username, password };
+    
+    // Si hay un tenant actual, incluirlo en los datos o en la cabecera según tu backend
+    if (currentTenant && currentTenant.id) {
+      console.log("Incluyendo tenant en solicitud:", currentTenant.id);
+      // Incluir en los datos (ajustar según tu API)
+      loginData.tenantId = currentTenant.id;
+      // O alternativamente, incluir en la cabecera
+      // axios.defaults.headers.common['X-Tenant-ID'] = currentTenant.id;
     }
-  };
+    
+    console.log("Datos de login:", loginData);
+    const res = await axios.post(url, loginData);
+    
+    console.log("Respuesta de login:", res.data);
+    setToken(res.data.token);
+    setUser(res.data.user);
+    setError(null);
+    return true;
+  } catch (err) {
+    console.error('Error en login:', err);
+    if (err.response) {
+      console.error('Respuesta del servidor:', err.response.data);
+      setError(err.response.data.message || err.response.data.error || 'Error al iniciar sesión');
+    } else {
+      setError('Error de conexión al servidor');
+    }
+    return false;
+  } finally {
+    setLoading(false);
+  }
+};
 
-  // Registrar usuario (solo admin puede crear)
+  // Registrar usuario - actualizado para incluir tenantId
   const register = async (userData) => {
     try {
       setLoading(true);
       console.log("Registrando usuario:", userData.username);
-      const res = await axios.post(`${API_URL}/api/auth/register`, userData);
+      
+      // Para registro de usuarios normales (dentro de un tenant)
+      let url, registrationData;
+      
+      if (userData.isTenantRegistration) {
+        // Si es registro de tenant (en el dominio principal)
+        url = `${API_URL}/api/tenants/register`;
+        registrationData = userData;
+      } else {
+        // Si es registro de usuario dentro de un tenant
+        url = currentTenant 
+          ? getTenantApiUrl('/auth/register')
+          : `${API_URL}/api/auth/register`;
+        
+        // Incluir tenantId en la solicitud si está disponible
+        registrationData = { 
+          ...userData,
+          ...(currentTenant && { tenantId: currentTenant.id })
+        };
+      }
+      
+      const res = await axios.post(url, registrationData);
       console.log("Respuesta de registro:", res.data);
       setError(null);
       
@@ -188,8 +284,13 @@ export const AuthProvider = ({ children }) => {
       
       console.log("Solicitando lista de usuarios...");
       
+      // Usar la URL específica del tenant si está disponible
+      const url = currentTenant 
+        ? getTenantApiUrl('/auth/users')
+        : `${API_URL}/api/auth/users`;
+      
       // Usar el token desde el state para mayor seguridad
-      const res = await axios.get(`${API_URL}/api/auth/users`, {
+      const res = await axios.get(url, {
         headers: {
           'Authorization': `Bearer ${token}`
         },
@@ -228,7 +329,7 @@ export const AuthProvider = ({ children }) => {
       
       throw err;
     }
-  }, [API_URL, token, user, usersCache]);
+  }, [API_URL, token, user, usersCache, currentTenant, getTenantApiUrl]);
 
   return (
     <AuthContext.Provider value={{
@@ -241,7 +342,8 @@ export const AuthProvider = ({ children }) => {
       register,
       getAllUsers,
       isAuthenticated: !!user,
-      isAdmin: user?.role === 'admin'
+      isAdmin: user?.role === 'admin',
+      tenantId: user?.tenantId || currentTenant?.id // Proporcionar tenantId actual
     }}>
       {children}
     </AuthContext.Provider>
