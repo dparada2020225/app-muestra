@@ -8,17 +8,26 @@ console.log('API URL configurada:', API_URL);
 // Interceptor para añadir el token a todas las solicitudes
 axios.interceptors.request.use(
   config => {
-    // Registrar la URL a la que se está haciendo la petición (para depuración)
-    console.log(`Realizando petición a: ${config.url}`);
+    // Obtener el subdominio actual
+    const host = window.location.host;
+    const hostParts = host.split('.');
     
+    // Si hay un subdominio, agregarlo como header
+    if (hostParts.length > 1) {
+      const subdomain = hostParts[0];
+      config.headers['X-Tenant-ID'] = subdomain;
+      console.log(`Enviando petición con X-Tenant-ID: ${subdomain}`);
+    }
+    
+    // Añadir el token si existe
     const token = localStorage.getItem('token');
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
+    
     return config;
   },
   error => {
-    console.error('Error en la configuración de la solicitud:', error);
     return Promise.reject(error);
   }
 );

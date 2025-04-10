@@ -133,47 +133,54 @@ export const AuthProvider = ({ children }) => {
   // };
 
   // Modificar la función login en AuthContext.js
-const login = async (username, password) => {
-  try {
-    setLoading(true);
-    console.log("Iniciando sesión con:", { username });
-    
-    // URL base para la solicitud de login
-    const url = `${API_URL}/api/auth/login`;
-    
-    // Datos básicos de login sin tenant
-    let loginData = { username, password };
-    
-    // Si hay un tenant actual, incluirlo en los datos o en la cabecera según tu backend
-    if (currentTenant && currentTenant.id) {
-      console.log("Incluyendo tenant en solicitud:", currentTenant.id);
-      // Incluir en los datos (ajustar según tu API)
-      loginData.tenantId = currentTenant.id;
-      // O alternativamente, incluir en la cabecera
-      // axios.defaults.headers.common['X-Tenant-ID'] = currentTenant.id;
+  const login = async (username, password) => {
+    try {
+      setLoading(true);
+      console.log("Iniciando sesión con:", { username });
+      
+      // Obtener el subdominio actual
+      const host = window.location.host;
+      const subdomain = host.split('.')[0];
+      
+      // URL base para la solicitud de login
+      const url = `${API_URL}/api/auth/login`;
+      
+      // Datos básicos de login con el tenant incluido
+      let loginData = { 
+        username, 
+        password,
+        tenantId: subdomain
+      };
+      
+      console.log("Datos de login:", loginData);
+      
+      // Añadir header específico de tenant
+      const config = {
+        headers: {
+          'X-Tenant-ID': subdomain
+        }
+      };
+      
+      const res = await axios.post(url, loginData, config);
+      
+      console.log("Respuesta de login:", res.data);
+      setToken(res.data.token);
+      setUser(res.data.user);
+      setError(null);
+      return true;
+    } catch (error) {
+      console.error('Error en login:', error);
+      if (error.response) {
+        console.error('Respuesta del servidor:', error.response.data);
+        setError(error.response.data.message || error.response.data.error || 'Error al iniciar sesión');
+      } else {
+        setError('Error de conexión al servidor');
+      }
+      return false;
+    } finally {
+      setLoading(false);
     }
-    
-    console.log("Datos de login:", loginData);
-    const res = await axios.post(url, loginData);
-    
-    console.log("Respuesta de login:", res.data);
-    setToken(res.data.token);
-    setUser(res.data.user);
-    setError(null);
-    return true;
-  } catch (err) {
-    console.error('Error en login:', err);
-    if (err.response) {
-      console.error('Respuesta del servidor:', err.response.data);
-      setError(err.response.data.message || err.response.data.error || 'Error al iniciar sesión');
-    } else {
-      setError('Error de conexión al servidor');
-    }
-    return false;
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   // Registrar usuario - actualizado para incluir tenantId
   const register = async (userData) => {
