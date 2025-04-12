@@ -1,9 +1,10 @@
-// src/components/Header/Header.js
+// src/components/Header/Header.js - actualizado
 import React from 'react';
 import styled from 'styled-components';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTenant } from '../../context/TenantContext';
+import Navigation from '../Navigation/Navigation';
 
 const HeaderContainer = styled.header`
   background-color: ${props => props.theme.colors.secondary};
@@ -45,25 +46,6 @@ const TenantName = styled.span`
   font-weight: bold;
   font-size: 1.2rem;
   margin-left: 5px;
-`;
-
-const Nav = styled.nav`
-  display: flex;
-  gap: 15px;
-`;
-
-const NavLink = styled(Link)`
-  color: ${props => props.theme.colors.primary};
-  text-decoration: none;
-  padding: 4px 10px;
-  border-radius: 4px;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  
-  &:hover {
-    background-color: rgba(59, 130, 246, 0.15);
-    transform: translateY(-2px);
-  }
 `;
 
 const UserMenu = styled.div`
@@ -150,10 +132,25 @@ const TenantBadge = styled(Badge)`
   margin-left: 12px;
 `;
 
+const LoginButton = styled(Link)`
+  color: ${props => props.theme.colors.primary};
+  text-decoration: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-weight: 600;
+  background-color: white;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  }
+`;
+
 const Header = () => {
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
   const dropdownRef = React.useRef(null);
-  const { user, isAuthenticated, isAdmin, logout } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
   const { currentTenant, loading: tenantLoading } = useTenant();
   const navigate = useNavigate();
   
@@ -181,8 +178,10 @@ const Header = () => {
     setDropdownOpen(!dropdownOpen);
   };
 
-  // Determinar si el usuario es admin de tenant
-  const isTenantAdmin = user && currentTenant && user.role === 'tenantAdmin';
+  // Determinar rol para las badges
+  const isSuperAdmin = user?.role === 'superAdmin';
+  const isTenantAdmin = user?.role === 'tenantAdmin';
+  const isTenantManager = user?.role === 'tenantManager';
   
   // Determinar si el usuario es un superadmin impersonando a un usuario del tenant
   const isImpersonating = user && user.impersonatedBy;
@@ -209,28 +208,17 @@ const Header = () => {
           </LogoContainer>
         </Logo>
 
-        <Nav>
-          {isAuthenticated ? (
-            <>
-              <NavLink to="/dashboard">Productos</NavLink>
-              
-              {(isAdmin || isTenantAdmin) && (
-                <>
-                  <NavLink to="/admin/transactions">Compras/Ventas</NavLink>
-                  <NavLink to="/admin/users">Usuarios</NavLink>
-                </>
-              )}
-              
-              {/* Menú específico para administradores de tenant */}
-              {isTenantAdmin && (
-                <NavLink to="/tenant/settings">Configuración</NavLink>
-              )}
-              
+        {isAuthenticated ? (
+          <>
+            <Navigation />
+            
+            <UserMenu>
               <Dropdown ref={dropdownRef}>
                 <DropdownButton onClick={toggleDropdown}>
                   {user.username}
-                  {isAdmin && <Badge color="#9c27b0">Admin</Badge>}
-                  {isTenantAdmin && <Badge color="#2196f3">Tenant Admin</Badge>}
+                  {isSuperAdmin && <Badge color="#9c27b0">SuperAdmin</Badge>}
+                  {isTenantAdmin && <Badge color="#2196f3">Admin</Badge>}
+                  {isTenantManager && <Badge color="#4caf50">Manager</Badge>}
                   {isImpersonating && <Badge color="#ff5722">Impersonando</Badge>}
                   {currentTenant && <TenantBadge>{currentTenant.name}</TenantBadge>}
                 </DropdownButton>
@@ -243,7 +231,7 @@ const Header = () => {
                   </DropdownItem>
                   
                   {/* Opciones específicas para superadmin */}
-                  {isAdmin && currentTenant && (
+                  {isSuperAdmin && currentTenant && (
                     <DropdownItem onClick={() => {
                       setDropdownOpen(false);
                       navigate('/admin/tenant-dashboard');
@@ -269,15 +257,15 @@ const Header = () => {
                   </DropdownItem>
                 </DropdownContent>
               </Dropdown>
-            </>
+            </UserMenu>
+          </>
+        ) : (
+          tenantLoading ? (
+            <span style={{ color: 'white' }}>Cargando...</span>
           ) : (
-            tenantLoading ? (
-              <span style={{ color: 'white' }}>Cargando...</span>
-            ) : (
-              <NavLink to="/login">Iniciar Sesión</NavLink>
-            )
-          )}
-        </Nav>
+            <LoginButton to="/login">Iniciar Sesión</LoginButton>
+          )
+        )}
       </Content>
     </HeaderContainer>
   );

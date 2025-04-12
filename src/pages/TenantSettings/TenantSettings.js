@@ -1,4 +1,4 @@
-// src/pages/TenantSettings/TenantSettings.js
+// src/pages/TenantSettings/TenantSettings.js - versión mejorada
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useTenant } from '../../context/TenantContext';
@@ -58,6 +58,22 @@ const Input = styled.input`
   }
 `;
 
+const TextArea = styled.textarea`
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  box-sizing: border-box;
+  min-height: 100px;
+  resize: vertical;
+  
+  &:focus {
+    border-color: ${props => props.theme.colors.primary};
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(150, 255, 0, 0.2);
+  }
+`;
+
 const ColorInput = styled(Input)`
   padding: 5px;
   width: 100px;
@@ -80,6 +96,26 @@ const Row = styled.div`
   align-items: center;
   gap: 15px;
   margin-bottom: 15px;
+`;
+
+const Tabs = styled.div`
+  display: flex;
+  margin-bottom: 30px;
+  border-bottom: 1px solid #ddd;
+`;
+
+const Tab = styled.button`
+  padding: 10px 20px;
+  background-color: ${props => props.active ? props.theme.colors.primary : 'transparent'};
+  color: ${props => props.active ? props.theme.colors.secondary : props.theme.colors.text};
+  border: none;
+  cursor: pointer;
+  font-weight: ${props => props.active ? 'bold' : 'normal'};
+  transition: all 0.2s;
+  
+  &:hover {
+    background-color: ${props => props.active ? props.theme.colors.primary : 'rgba(0,0,0,0.05)'};
+  }
 `;
 
 const ButtonContainer = styled.div`
@@ -120,17 +156,53 @@ const ErrorMessage = styled.div`
 `;
 
 const SuccessMessage = styled.div`
-  color: ${props => props.theme.colors.success};
+  color: ${props => props.theme.colors.success || '#4caf50'};
   background-color: rgba(76, 175, 80, 0.1);
-  border-left: 3px solid ${props => props.theme.colors.success};
+  border-left: 3px solid ${props => props.theme.colors.success || '#4caf50'};
   padding: 12px;
   margin-bottom: 20px;
   border-radius: 4px;
 `;
 
+const FileInputContainer = styled.div`
+  margin-bottom: 20px;
+`;
+
+const FileInputLabel = styled.label`
+  display: inline-block;
+  background-color: ${props => props.theme.colors.primary};
+  color: ${props => props.theme.colors.secondary};
+  padding: 10px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+  
+  &:hover {
+    background-color: ${props => props.theme.colors.primaryHover};
+    transform: translateY(-2px);
+  }
+`;
+
+const HiddenFileInput = styled.input`
+  display: none;
+`;
+
+const FilePreview = styled.div`
+  margin-top: 10px;
+  
+  img {
+    max-width: 200px;
+    max-height: 100px;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  }
+`;
+
 const TenantSettings = () => {
   const { currentTenant, loading: tenantLoading, applyTenantSettings } = useTenant();
   const { user, isAuthenticated } = useAuth();
+  const [activeTab, setActiveTab] = useState('general');
   const [formData, setFormData] = useState({
     name: '',
     slogan: '',
@@ -138,11 +210,24 @@ const TenantSettings = () => {
     primaryColor: '',
     secondaryColor: '',
     currencySymbol: '',
-    logoText: ''
+    dateFormat: 'DD/MM/YYYY',
+    // Información de contacto
+    email: '',
+    phone: '',
+    address: '',
+    taxId: '',
+    // Integraciones y configuraciones adicionales
+    enableInventoryAlerts: false,
+    lowStockThreshold: 5,
+    defaultDateRange: 30
   });
+  const [logoFile, setLogoFile] = useState(null);
+  const [logoPreview, setLogoPreview] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
   
   useEffect(() => {
     if (currentTenant && !tenantLoading) {
@@ -153,17 +238,45 @@ const TenantSettings = () => {
         primaryColor: currentTenant.customization?.primaryColor || '#3b82f6',
         secondaryColor: currentTenant.customization?.secondaryColor || '#333333',
         currencySymbol: currentTenant.customization?.currencySymbol || 'Q',
-        logoText: currentTenant.customization?.logoText || currentTenant.name || ''
+        dateFormat: currentTenant.customization?.dateFormat || 'DD/MM/YYYY',
+        // Información de contacto
+        email: currentTenant.contactInfo?.email || '',
+        phone: currentTenant.contactInfo?.phone || '',
+        address: currentTenant.contactInfo?.address || '',
+        taxId: currentTenant.contactInfo?.taxId || '',
+        // Integraciones y configuraciones adicionales
+        enableInventoryAlerts: currentTenant.settings?.enableInventoryAlerts || false,
+        lowStockThreshold: currentTenant.settings?.lowStockThreshold || 5,
+        defaultDateRange: currentTenant.settings?.defaultDateRange || 30
       });
+      
+      // Si hay un logo, establecer la URL de vista previa
+      if (currentTenant.logo) {
+        setLogoPreview(`${API_URL}/images/${currentTenant.logo}`);
+      }
     }
-  }, [currentTenant, tenantLoading]);
+  }, [currentTenant, tenantLoading, API_URL]);
   
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: type === 'checkbox' ? checked : value
     }));
+  };
+  
+  const handleLogoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setLogoFile(file);
+      
+      // Crear URL para preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLogoPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
   };
   
   const handleSubmit = async (e) => {
@@ -173,27 +286,59 @@ const TenantSettings = () => {
     setSuccess('');
     
     // Verificar si el usuario tiene permiso
-    if (!isAuthenticated || (user.role !== 'tenantAdmin' && user.role !== 'admin')) {
+    if (!isAuthenticated || (user.role !== 'tenantAdmin' && user.role !== 'admin' && user.role !== 'superAdmin')) {
       setError('No tienes permiso para modificar la configuración del tenant');
       setIsLoading(false);
       return;
     }
     
     try {
-      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      let logoId = currentTenant.logo;
+      
+      // Si hay un nuevo logo, subirlo primero
+      if (logoFile) {
+        const logoFormData = new FormData();
+        logoFormData.append('image', logoFile);
+        
+        try {
+          const uploadResponse = await axios.post(`${API_URL}/upload`, logoFormData);
+          logoId = uploadResponse.data.imageId;
+        } catch (logoError) {
+          console.error('Error al subir logo:', logoError);
+          setError('Error al subir el logo. Intenta con otra imagen o más tarde.');
+          setIsLoading(false);
+          return;
+        }
+      }
+      
+      // Preparar datos para actualizar el tenant
+      const updateData = {
+        name: formData.name,
+        slogan: formData.slogan,
+        description: formData.description,
+        logo: logoId,
+        contactInfo: {
+          email: formData.email,
+          phone: formData.phone,
+          address: formData.address,
+          taxId: formData.taxId
+        },
+        customization: {
+          primaryColor: formData.primaryColor,
+          secondaryColor: formData.secondaryColor,
+          currencySymbol: formData.currencySymbol,
+          dateFormat: formData.dateFormat
+        },
+        settings: {
+          enableInventoryAlerts: formData.enableInventoryAlerts,
+          lowStockThreshold: parseInt(formData.lowStockThreshold),
+          defaultDateRange: parseInt(formData.defaultDateRange)
+        }
+      };
+      
       const response = await axios.put(
         `${API_URL}/api/tenants/${currentTenant.id}/settings`,
-        {
-          name: formData.name,
-          slogan: formData.slogan,
-          description: formData.description,
-          customization: {
-            primaryColor: formData.primaryColor,
-            secondaryColor: formData.secondaryColor,
-            currencySymbol: formData.currencySymbol,
-            logoText: formData.logoText
-          }
-        },
+        updateData,
         {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -230,117 +375,283 @@ const TenantSettings = () => {
       {error && <ErrorMessage>{error}</ErrorMessage>}
       {success && <SuccessMessage>{success}</SuccessMessage>}
       
+      <Tabs>
+        <Tab 
+          active={activeTab === 'general'} 
+          onClick={() => setActiveTab('general')}
+        >
+          Información General
+        </Tab>
+        <Tab 
+          active={activeTab === 'appearance'} 
+          onClick={() => setActiveTab('appearance')}
+        >
+          Apariencia
+        </Tab>
+        <Tab 
+          active={activeTab === 'contact'} 
+          onClick={() => setActiveTab('contact')}
+        >
+          Contacto
+        </Tab>
+        <Tab 
+          active={activeTab === 'settings'} 
+          onClick={() => setActiveTab('settings')}
+        >
+          Configuraciones
+        </Tab>
+      </Tabs>
+      
       <form onSubmit={handleSubmit}>
-        <Card>
-          <SectionTitle>Información General</SectionTitle>
-          
-          <FormGroup>
-            <Label htmlFor="name">Nombre del Tenant</Label>
-            <Input
-              type="text"
-              id="name"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              required
-            />
-          </FormGroup>
-          
-          <FormGroup>
-            <Label htmlFor="slogan">Eslogan</Label>
-            <Input
-              type="text"
-              id="slogan"
-              name="slogan"
-              value={formData.slogan}
-              onChange={handleChange}
-            />
-          </FormGroup>
-          
-          <FormGroup>
-            <Label htmlFor="description">Descripción</Label>
-            <Input
-              as="textarea"
-              rows="4"
-              id="description"
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-            />
-          </FormGroup>
-        </Card>
+        {/* Pestaña de Información General */}
+        {activeTab === 'general' && (
+          <Card>
+            <SectionTitle>Información General</SectionTitle>
+            
+            <FormGroup>
+              <Label htmlFor="name">Nombre del Tenant</Label>
+              <Input
+                type="text"
+                id="name"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                required
+              />
+            </FormGroup>
+            
+            <FormGroup>
+              <Label htmlFor="slogan">Eslogan</Label>
+              <Input
+                type="text"
+                id="slogan"
+                name="slogan"
+                value={formData.slogan}
+                onChange={handleChange}
+              />
+            </FormGroup>
+            
+            <FormGroup>
+              <Label htmlFor="description">Descripción</Label>
+              <TextArea
+                id="description"
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                rows="4"
+              />
+            </FormGroup>
+          </Card>
+        )}
         
-        <Card>
-          <SectionTitle>Personalización Visual</SectionTitle>
-          
-          <FormGroup>
-            <Label htmlFor="logoText">Texto del Logo</Label>
-            <Input
-              type="text"
-              id="logoText"
-              name="logoText"
-              value={formData.logoText}
-              onChange={handleChange}
-            />
-          </FormGroup>
-          
-          <FormGroup>
-            <Label htmlFor="primaryColor">Color Primario</Label>
-            <Row>
-              <ColorPreview color={formData.primaryColor} />
-              <ColorInput
-                type="color"
-                id="primaryColor"
-                name="primaryColor"
-                value={formData.primaryColor}
-                onChange={handleChange}
+        {/* Pestaña de Apariencia */}
+        {activeTab === 'appearance' && (
+          <Card>
+            <SectionTitle>Apariencia</SectionTitle>
+            
+            <FileInputContainer>
+              <Label>Logo de la Empresa</Label>
+              <FileInputLabel htmlFor="logoInput">Seleccionar Logo</FileInputLabel>
+              <HiddenFileInput
+                id="logoInput"
+                type="file"
+                accept="image/*"
+                onChange={handleLogoChange}
               />
+              {logoPreview && (
+                <FilePreview>
+                  <img src={logoPreview} alt="Logo Preview" />
+                </FilePreview>
+              )}
+            </FileInputContainer>
+            
+            <FormGroup>
+              <Label htmlFor="primaryColor">Color Primario</Label>
+              <Row>
+                <ColorPreview color={formData.primaryColor} />
+                <ColorInput
+                  type="color"
+                  id="primaryColor"
+                  name="primaryColor"
+                  value={formData.primaryColor}
+                  onChange={handleChange}
+                />
+                <Input
+                  type="text"
+                  value={formData.primaryColor}
+                  onChange={(e) => handleChange({
+                    target: { name: 'primaryColor', value: e.target.value }
+                  })}
+                  placeholder="#3b82f6"
+                />
+              </Row>
+            </FormGroup>
+            
+            <FormGroup>
+              <Label htmlFor="secondaryColor">Color Secundario</Label>
+              <Row>
+                <ColorPreview color={formData.secondaryColor} />
+                <ColorInput
+                  type="color"
+                  id="secondaryColor"
+                  name="secondaryColor"
+                  value={formData.secondaryColor}
+                  onChange={handleChange}
+                />
+                <Input
+                  type="text"
+                  value={formData.secondaryColor}
+                  onChange={(e) => handleChange({
+                    target: { name: 'secondaryColor', value: e.target.value }
+                  })}
+                  placeholder="#333333"
+                />
+              </Row>
+            </FormGroup>
+            
+            <FormGroup>
+              <Label htmlFor="currencySymbol">Símbolo de Moneda</Label>
               <Input
                 type="text"
-                value={formData.primaryColor}
-                onChange={(e) => handleChange({
-                  target: { name: 'primaryColor', value: e.target.value }
-                })}
-                placeholder="#3b82f6"
-              />
-            </Row>
-          </FormGroup>
-          
-          <FormGroup>
-            <Label htmlFor="secondaryColor">Color Secundario</Label>
-            <Row>
-              <ColorPreview color={formData.secondaryColor} />
-              <ColorInput
-                type="color"
-                id="secondaryColor"
-                name="secondaryColor"
-                value={formData.secondaryColor}
+                id="currencySymbol"
+                name="currencySymbol"
+                value={formData.currencySymbol}
                 onChange={handleChange}
+                maxLength="3"
+                style={{ width: '100px' }}
               />
+            </FormGroup>
+            
+            <FormGroup>
+              <Label htmlFor="dateFormat">Formato de Fecha</Label>
+              <select
+                id="dateFormat"
+                name="dateFormat"
+                value={formData.dateFormat}
+                onChange={handleChange}
+                style={{
+                  padding: '10px',
+                  borderRadius: '6px',
+                  border: '1px solid #ddd',
+                  width: '200px'
+                }}
+              >
+                <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                <option value="DD-MM-YYYY">DD-MM-YYYY</option>
+              </select>
+            </FormGroup>
+          </Card>
+        )}
+        
+        {/* Pestaña de Contacto */}
+        {activeTab === 'contact' && (
+          <Card>
+            <SectionTitle>Información de Contacto</SectionTitle>
+            
+            <FormGroup>
+              <Label htmlFor="email">Correo Electrónico</Label>
+              <Input
+                type="email"
+                id="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                required
+              />
+            </FormGroup>
+            
+            <FormGroup>
+              <Label htmlFor="phone">Teléfono</Label>
               <Input
                 type="text"
-                value={formData.secondaryColor}
-                onChange={(e) => handleChange({
-                  target: { name: 'secondaryColor', value: e.target.value }
-                })}
-                placeholder="#333333"
+                id="phone"
+                name="phone"
+                value={formData.phone}
+                onChange={handleChange}
               />
-            </Row>
-          </FormGroup>
-          
-          <FormGroup>
-            <Label htmlFor="currencySymbol">Símbolo de Moneda</Label>
-            <Input
-              type="text"
-              id="currencySymbol"
-              name="currencySymbol"
-              value={formData.currencySymbol}
-              onChange={handleChange}
-              maxLength="3"
-              style={{ width: '100px' }}
-            />
-          </FormGroup>
-        </Card>
+            </FormGroup>
+            
+            <FormGroup>
+              <Label htmlFor="address">Dirección</Label>
+              <TextArea
+                id="address"
+                name="address"
+                value={formData.address}
+                onChange={handleChange}
+                rows="3"
+              />
+            </FormGroup>
+            
+            <FormGroup>
+              <Label htmlFor="taxId">ID Fiscal / NIT</Label>
+              <Input
+                type="text"
+                id="taxId"
+                name="taxId"
+                value={formData.taxId}
+                onChange={handleChange}
+              />
+            </FormGroup>
+          </Card>
+        )}
+        
+        {/* Pestaña de Configuraciones */}
+        {activeTab === 'settings' && (
+          <Card>
+            <SectionTitle>Configuraciones Adicionales</SectionTitle>
+            
+            <FormGroup>
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+                <input
+                  type="checkbox"
+                  id="enableInventoryAlerts"
+                  name="enableInventoryAlerts"
+                  checked={formData.enableInventoryAlerts}
+                  onChange={handleChange}
+                  style={{ marginRight: '10px' }}
+                />
+                <Label htmlFor="enableInventoryAlerts" style={{ marginBottom: 0 }}>
+                  Activar alertas de inventario bajo
+                </Label>
+              </div>
+            </FormGroup>
+            
+            <FormGroup>
+              <Label htmlFor="lowStockThreshold">Umbral de stock bajo</Label>
+              <Input
+                type="number"
+                id="lowStockThreshold"
+                name="lowStockThreshold"
+                value={formData.lowStockThreshold}
+                onChange={handleChange}
+                min="1"
+                max="100"
+                disabled={!formData.enableInventoryAlerts}
+              />
+              <small style={{ display: 'block', marginTop: '5px', color: '#666' }}>
+                Se enviarán alertas cuando el stock de un producto esté por debajo de este valor.
+              </small>
+            </FormGroup>
+            
+            <FormGroup>
+              <Label htmlFor="defaultDateRange">Rango de fechas predeterminado (días)</Label>
+              <Input
+                type="number"
+                id="defaultDateRange"
+                name="defaultDateRange"
+                value={formData.defaultDateRange}
+                onChange={handleChange}
+                min="1"
+                max="365"
+              />
+              <small style={{ display: 'block', marginTop: '5px', color: '#666' }}>
+                Rango de fechas predeterminado para reportes y filtros de transacciones.
+              </small>
+            </FormGroup>
+          </Card>
+        )}
         
         <ButtonContainer>
           <Button type="button" onClick={() => window.history.back()}>

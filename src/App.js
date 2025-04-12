@@ -17,6 +17,12 @@ import PublicTenantPage from './pages/PublicTenantPage/PublicTenantPage';
 import NotFound from './pages/NotFound/NotFound';
 import TenantThemeProvider from './components/TenantThemeProvider/TenantThemeProvider';
 import TenantSettings from './pages/TenantSettings/TenantSettings';
+import TenantDashboard from './pages/TenantDashboard/TenantDashboard';
+
+// Importar páginas de error de tenant
+import TenantError from './pages/TenantError/TenantError';
+import TenantSuspended from './pages/TenantSuspended/TenantSuspended';
+import UnauthorizedTenant from './pages/UnauthorizedTenant/UnauthorizedTenant';
 
 // Componente para manejar la inicialización del tenant basado en el usuario
 const TenantInitializer = ({ children }) => {
@@ -51,6 +57,17 @@ function App() {
                 <Route path="/public" element={<PublicTenantPage />} />
                 <Route path="/login" element={<Login />} />
                 
+                {/* Rutas de error de tenant */}
+                <Route path="/tenant-error" element={<TenantError />} />
+                <Route path="/tenant-suspended" element={<TenantSuspended />} />
+                <Route path="/unauthorized-tenant" element={<UnauthorizedTenant />} />
+                
+                {/* Dashboard de Tenant Admin */}
+                <Route element={<ProtectedRoute requireTenant={true} requireTenantAdmin={true} />}>
+                  <Route path="/tenant/dashboard" element={<TenantDashboard />} />
+                  <Route path="/tenant/settings" element={<TenantSettings />} />
+                </Route>
+                
                 {/* Rutas protegidas (requieren autenticación y tenant) */}
                 <Route element={<ProtectedRoute requireTenant={true} />}>
                   <Route path="/dashboard" element={
@@ -60,10 +77,8 @@ function App() {
                   } />
                 </Route>
                 
-                {/* Rutas solo para admin dentro del tenant */}
-                <Route element={<ProtectedRoute requireAdmin={true} requireTenant={true} />}>
-                  <Route path="/admin/users" element={<UserManagement />} />
-                  <Route path="/admin/users/new" element={<Register />} />
+                {/* Rutas para administradores y managers de tenant */}
+                <Route element={<ProtectedRoute requireTenant={true} requireTenantManager={true} />}>
                   <Route path="/admin/transactions" element={
                     <ProductProvider>
                       <TransactionProvider>
@@ -73,9 +88,15 @@ function App() {
                   } />
                 </Route>
                 
-                {/* Rutas específicas para administradores del tenant */}
+                {/* Rutas solo para tenantAdmin y superAdmin */}
                 <Route element={<ProtectedRoute requireTenant={true} requireTenantAdmin={true} />}>
-                  <Route path="/tenant/settings" element={<TenantSettings />} />
+                  <Route path="/admin/users" element={<UserManagement />} />
+                  <Route path="/admin/users/new" element={<Register />} />
+                </Route>
+                
+                {/* Rutas específicas para superAdmin */}
+                <Route element={<ProtectedRoute requireSuperAdmin={true} />}>
+                  <Route path="/admin/tenant-dashboard" element={<div>Panel de SuperAdmin</div>} />
                 </Route>
                 
                 {/* Rutas específicas para el dominio principal (sin tenant) */}
