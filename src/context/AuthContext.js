@@ -94,48 +94,6 @@ export const AuthProvider = ({ children }) => {
     verifyToken();
   }, [token, API_URL, currentTenant, getTenantApiUrl]);
 
-  // Iniciar sesión - actualizado para incluir tenantId
-  // const login = async (username, password) => {
-  //   try {
-  //     setLoading(true);
-  //     console.log("Iniciando sesión con:", { username });
-      
-  //     // Usar la URL específica del tenant si está disponible
-  //     const url = currentTenant 
-  //       ? getTenantApiUrl('/auth/login')
-  //       : `${API_URL}/api/auth/login`;
-      
-  //     // Incluir tenantId en la solicitud si está disponible
-  //     const loginData = { 
-  //       username, 
-  //       password,
-  //       ...(currentTenant && { tenantId: currentTenant.id })
-  //     };
-      
-  //     const res = await axios.post(url, loginData);
-  //     console.log("Respuesta de login:", res.data);
-      
-  //     setToken(res.data.token);
-  //     setUser(res.data.user);
-  //     setError(null);
-  //     return true;
-  //   } catch (err) {
-  //     console.error('Error en login:', err);
-  //     if (err.response) {
-  //       console.error('Respuesta del servidor:', err.response.data);
-  //       setError(err.response.data.message || 'Error al iniciar sesión');
-  //     } else {
-  //       setError('Error de conexión al servidor');
-  //     }
-  //     return false;
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-  // Modificar la función login en AuthContext.js
-// En AuthContext.js necesitamos corregir la función login para manejar mejor los subdominios
-
 // Modifica la función login a esta versión
   const login = async (username, password) => {
     try {
