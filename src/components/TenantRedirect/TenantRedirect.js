@@ -1,4 +1,4 @@
-// src/components/TenantRedirect/TenantRedirect.js - versión mejorada
+// src/components/TenantRedirect/TenantRedirect.js - versión corregida
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTenant } from '../../context/TenantContext';
@@ -48,7 +48,7 @@ const Message = styled.div`
 `;
 
 const TenantRedirect = () => {
-  const { currentTenant, loading: tenantLoading, error: tenantError, switchTenant } = useTenant();
+  const { currentTenant, loading: tenantLoading, error: tenantError } = useTenant();
   const { isAuthenticated, loading: authLoading, user } = useAuth();
   const navigate = useNavigate();
   const [message, setMessage] = useState('Verificando información del tenant...');
@@ -81,15 +81,6 @@ const TenantRedirect = () => {
     // No hacer nada hasta que se completen todas las verificaciones
     if (tenantLoading || authLoading) {
       setMessage('Cargando...');
-      return;
-    }
-    
-    // Si hay un error con el tenant, manejarlo
-    if (tenantError) {
-      console.error("Error de tenant:", tenantError);
-      // Redirigir a la página de error de tenant
-      setRedirectPath('/tenant-error');
-      setMessage('Redirigiendo a la página de error...');
       return;
     }
     
@@ -132,8 +123,8 @@ const TenantRedirect = () => {
         // Si el usuario tiene un tenantId, intentar cargar ese tenant
         if (user?.tenantId) {
           console.log("Intentando cargar tenant del usuario:", user.tenantId);
-          switchTenant(user.tenantId);
-          return; // Esperar a que se cargue el tenant
+          navigate('/dashboard');
+          return;
         }
         
         // Si es superAdmin, ir al dashboard de superadmin
@@ -152,7 +143,7 @@ const TenantRedirect = () => {
         setMessage('Redirigiendo a registro de tenant...');
       }
     }
-  }, [currentTenant, isAuthenticated, tenantLoading, authLoading, user, tenantError, switchTenant]);
+  }, [currentTenant, isAuthenticated, tenantLoading, authLoading, user, tenantError, navigate]);
   
   // Realizar la redirección cuando se establece redirectPath
   useEffect(() => {

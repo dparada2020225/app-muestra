@@ -1,8 +1,9 @@
-// src/pages/Admin/UserManagement.js
+// src/pages/Admin/UserManagement.js - corregido
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
+import axios from 'axios';
 
 const Container = styled.div`
   max-width: 1200px;
@@ -71,7 +72,14 @@ const Badge = styled.span`
   font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
-  background-color: ${props => props.role === 'admin' ? '#9c27b0' : '#2196f3'};
+  background-color: ${props => {
+    switch(props.role) {
+      case 'tenantAdmin': return '#2196f3';
+      case 'tenantManager': return '#4caf50';
+      case 'tenantUser': return '#ff9800';
+      default: return '#9c27b0';
+    }
+  }};
   color: white;
 `;
 
@@ -117,31 +125,31 @@ const UserManagement = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [initialized, setInitialized] = useState(false);
+  const { user, token } = useAuth();
   
-  const { getAllUsers, isAdmin } = useAuth();
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
   
-  // Función para cargar usuarios una sola vez
-  const fetchUsers = useCallback(async (forceRefresh = false) => {
-    if (!isAdmin) return;
-    
-    // No cargar si ya estamos cargando, excepto si es forzado
-    if (loading && !forceRefresh) return;
+  // Función corregida para obtener usuarios
+  const fetchUsers = useCallback(async () => {
+    if (!token) return;
     
     try {
       setLoading(true);
+      setError('');
       
-      // Pasar el parámetro forceRefresh para indicar si debe ignorar la caché
-      const data = await getAllUsers(forceRefresh);
+      // Usar endpoint directo ya que el método getAllUsers puede tener problemas
+      const response = await axios.get(`${API_URL}/api/auth/users`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       
-      if (Array.isArray(data)) {
-        console.log("Datos de usuarios recibidos:", data);
-        setUsers(data);
-        setError('');
-        setInitialized(true);
+      if (Array.isArray(response.data)) {
+        console.log("Datos de usuarios recibidos:", response.data);
+        setUsers(response.data);
       } else {
         setError('La respuesta del servidor no es válida');
-        console.error('Respuesta no válida del servidor:', data);
+        console.error('Respuesta no válida del servidor:', response.data);
       }
     } catch (err) {
       console.error('Error al cargar usuarios:', err);
@@ -149,19 +157,28 @@ const UserManagement = () => {
     } finally {
       setLoading(false);
     }
-  }, [getAllUsers, isAdmin, loading]);
+  }, [API_URL, token]);
   
-  // Cargar usuarios solo cuando se monta el componente
+  // Cargar usuarios cuando se monta el componente
   useEffect(() => {
-    if (!initialized && isAdmin) {
-      fetchUsers();
-    }
-  }, [fetchUsers, initialized, isAdmin]);
+    fetchUsers();
+  }, [fetchUsers]);
   
   // Función para forzar la actualización de usuarios
   const handleRefresh = () => {
-    fetchUsers(true); // Pasar true para forzar actualización
+    fetchUsers();
   };
+  
+  // Determinar si el usuario tiene permisos para administrar usuarios
+  const isAuthorized = user && (user.role === 'tenantAdmin' || user.role === 'superAdmin');
+  
+  if (!isAuthorized) {
+    return (
+      <Container>
+        <ErrorMessage>No tienes permiso para acceder a esta página</ErrorMessage>
+      </Container>
+    );
+  }
   
   return (
     <Container>
@@ -196,7 +213,9 @@ const UserManagement = () => {
                   <Td>{user.username}</Td>
                   <Td>
                     <Badge role={user.role}>
-                      {user.role === 'admin' ? 'Administrador' : 'Usuario'}
+                      {user.role === 'tenantAdmin' ? 'Administrador' : 
+                       user.role === 'tenantManager' ? 'Manager' : 
+                       user.role === 'tenantUser' ? 'Usuario' : user.role}
                     </Badge>
                   </Td>
                   <Td>{new Date(user.createdAt).toLocaleString()}</Td>

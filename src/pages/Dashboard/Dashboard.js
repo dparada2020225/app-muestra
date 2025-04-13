@@ -290,7 +290,8 @@ const DashboardContent = () => {
   const [productToEdit, setProductToEdit] = useState(null);
   
   // Usar el contexto de autenticación
-  const { isAdmin } = useAuth();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin' || user?.role === 'tenantAdmin' || user?.role === 'superAdmin';
   
   // Crear estado local para los filtros
   const [localFilters, setLocalFilters] = useState({

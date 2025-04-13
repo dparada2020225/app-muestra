@@ -1,4 +1,4 @@
-// src/pages/Transactions/TransactionsPage.js
+// src/pages/Transactions/TransactionsPage.js - corregido
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
@@ -95,18 +95,26 @@ const ErrorMessage = styled.div`
 const TransactionsPage = () => {
   const [activeTab, setActiveTab] = useState('purchases'); // 'purchases' o 'sales'
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const { isAdmin } = useAuth();
+  const { user } = useAuth(); // Cambiamos isAdmin por user
   const { initializeData, dataInitialized } = useTransactions();
+  
+  // Chequeamos los permisos basados en el rol
+  const isTenantAdmin = user?.role === 'tenantAdmin';
+  const isTenantManager = user?.role === 'tenantManager';
+  const isSuperAdmin = user?.role === 'superAdmin';
+  
+  // Si tiene cualquiera de estos roles, tiene acceso
+  const hasAccess = isTenantAdmin || isTenantManager || isSuperAdmin;
   
   // Inicializar datos cuando se carga la página, solo si no se han inicializado
   useEffect(() => {
-    if (isAdmin && !dataInitialized) {
+    if (hasAccess && !dataInitialized) {
       initializeData();
     }
-  }, [isAdmin, dataInitialized, initializeData]);
+  }, [hasAccess, dataInitialized, initializeData]);
   
-  // Si no es admin, mostrar mensaje de error
-  if (!isAdmin) {
+  // Si no tiene permisos, mostrar mensaje de error
+  if (!hasAccess) {
     return (
       <Container>
         <ErrorMessage>

@@ -1,4 +1,4 @@
-// src/components/ProtectedRoute/ProtectedRoute.js - actualizado
+// src/components/ProtectedRoute/ProtectedRoute.js - corregido
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
