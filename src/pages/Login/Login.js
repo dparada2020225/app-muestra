@@ -174,7 +174,7 @@ testAPIConnection();
       if (success) {
         console.log("Login exitoso, redirigiendo...");
         // Usar replace: true para evitar volver al login con el botón de atrás
-        navigate('/', { replace: true });
+        navigate('/dashboard', { replace: true });
       } else {
         console.log("Login falló");
       }

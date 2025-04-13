@@ -134,6 +134,9 @@ export const AuthProvider = ({ children }) => {
   // };
 
   // Modificar la función login en AuthContext.js
+// En AuthContext.js necesitamos corregir la función login para manejar mejor los subdominios
+
+// Modifica la función login a esta versión
   const login = async (username, password) => {
     try {
       setLoading(true);
@@ -141,34 +144,49 @@ export const AuthProvider = ({ children }) => {
       
       // Obtener el subdominio actual
       const host = window.location.host;
-      const subdomain = host.split('.')[0];
+      console.log("Host actual:", host);
       
-      // URL base para la solicitud de login
+      // Construir la URL para login
       const url = `${API_URL}/api/auth/login`;
       
-      // Datos básicos de login con el tenant incluido
-      let loginData = { 
+      // Datos básicos de login
+      const loginData = { 
         username, 
-        password,
-        tenantId: subdomain
+        password
       };
+      
+      // Si estamos en un subdominio, extraerlo y agregarlo a la solicitud
+      if (host.includes('.') && !host.startsWith('www.')) {
+        const subdomain = host.split('.')[0];
+        if (subdomain !== 'localhost' && subdomain !== 'www') {
+          console.log(`Detectado subdomain: ${subdomain}`);
+          // Añadir header específico de tenant
+          loginData.tenantId = subdomain;
+        }
+      }
       
       console.log("Datos de login:", loginData);
       
-      // Añadir header específico de tenant
-      const config = {
-        headers: {
-          'X-Tenant-ID': subdomain
-        }
-      };
+        const response = await axios.post(url, loginData);
       
-      const res = await axios.post(url, loginData, config);
+        console.log("Respuesta de login:", response.data);
       
-      console.log("Respuesta de login:", res.data);
-      setToken(res.data.token);
-      setUser(res.data.user);
+      if (response.data.token) {
+        setToken(response.data.token);
+        setUser(response.data.user);
       setError(null);
+      
+      // Almacenar en localStorage
+      localStorage.setItem('token', response.data.token);
+      
+      // Configurar el token en los encabezados de Axios
+      axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
+      
       return true;
+      } else {
+        setError('Respuesta inválida del servidor');
+        return false;
+      }
     } catch (error) {
       console.error('Error en login:', error);
       if (error.response) {

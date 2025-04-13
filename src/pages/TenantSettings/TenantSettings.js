@@ -1,4 +1,4 @@
-// src/pages/TenantSettings/TenantSettings.js - versión mejorada
+// src/pages/TenantSettings/TenantSettings.js - versión corregida
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useTenant } from '../../context/TenantContext';
@@ -336,8 +336,10 @@ const TenantSettings = () => {
         }
       };
       
+      // Corregimos la URL para que apunte al endpoint correcto
+      // En lugar de /api/tenants/ID/settings, usamos la API directa
       const response = await axios.put(
-        `${API_URL}/api/tenants/${currentTenant.id}/settings`,
+        `${API_URL}/api/tenants/${currentTenant.id || currentTenant._id}`,
         updateData,
         {
           headers: {
@@ -347,14 +349,33 @@ const TenantSettings = () => {
       );
       
       // Si la actualización fue exitosa, actualizar el tenant actual
-      if (response.data && response.data.tenant) {
-        // Aplicar configuración actualizada
-        applyTenantSettings(response.data.tenant);
+      if (response.data) {
+        console.log("Respuesta del servidor:", response.data);
+        
+        // Aplicar configuración actualizada si está disponible en la respuesta
+        if (response.data.tenant) {
+          applyTenantSettings(response.data.tenant);
+        }
+        
         setSuccess('Configuración actualizada correctamente');
+        
+        // Actualizamos la vista previa del logo si se subió uno nuevo
+        if (logoId && logoId !== currentTenant.logo) {
+          setLogoPreview(`${API_URL}/images/${logoId}`);
+        }
       }
     } catch (err) {
       console.error('Error al actualizar configuración del tenant:', err);
-      setError(err.response?.data?.message || 'Error al actualizar la configuración');
+      
+      // Mostrar un mensaje de error más descriptivo
+      if (err.response) {
+        setError(err.response.data?.message || 'Error al actualizar la configuración: ' + err.response.status);
+        console.log("Respuesta de error:", err.response.data);
+      } else if (err.request) {
+        setError('No se recibió respuesta del servidor. Verifica tu conexión.');
+      } else {
+        setError('Error al realizar la solicitud: ' + err.message);
+      }
     } finally {
       setIsLoading(false);
     }
