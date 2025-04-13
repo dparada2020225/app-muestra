@@ -318,11 +318,24 @@ const handleSubmit = async (e) => {
       const formDataFile = new FormData();
       formDataFile.append('image', selectedFile);
       
+      // Obtener el tenant actual (de localStorage o del contexto)
+      const currentTenantData = localStorage.getItem('currentTenant');
+      let tenantSubdomain = 'demo'; // valor por defecto
+      
+      if (currentTenantData) {
+        try {
+          const parsedTenant = JSON.parse(currentTenantData);
+          tenantSubdomain = parsedTenant.subdomain || 'demo';
+        } catch (e) {
+          console.error('Error al parsear tenant del localStorage:', e);
+        }
+      }
+      
       // Añadir explícitamente el tenant ID al FormData
-      formDataFile.append('tenantId', 'demo');
+      formDataFile.append('tenantId', tenantSubdomain);
       
       try {
-        console.log('Subiendo imagen con tenant demo...');
+        console.log(`Subiendo imagen con tenant ${tenantSubdomain}...`);
         
         // Configurar los headers manualmente para esta solicitud
         const uploadResponse = await axios.post(
@@ -331,7 +344,7 @@ const handleSubmit = async (e) => {
           {
             headers: {
               'Content-Type': 'multipart/form-data',
-              'X-Tenant-ID': 'demo'
+              'X-Tenant-ID': tenantSubdomain
             }
           }
         );
@@ -340,13 +353,30 @@ const handleSubmit = async (e) => {
         imageId = uploadResponse.data.imageId;
       } catch (imageError) {
         console.error('Error al subir imagen:', imageError);
-        console.log('Respuesta de error imagen:', imageError.response?.data);
+        
+        // Extraer y mostrar detalles del error
+        let errorMessage = 'Error al subir imagen.';
+        let errorDetails = {};
+        
+        if (imageError.response) {
+          errorMessage = imageError.response.data.message || errorMessage;
+          errorDetails = {
+            status: imageError.response.status,
+            statusText: imageError.response.statusText,
+            data: imageError.response.data
+          };
+        } else if (imageError.request) {
+          errorMessage = 'No se recibió respuesta del servidor.';
+          errorDetails = { request: 'La solicitud se envió pero no se recibió respuesta' };
+        } else {
+          errorMessage = imageError.message || errorMessage;
+        }
+        
         setDetailedError({
-          message: 'Error al subir imagen',
-          details: imageError.response?.data || imageError.message,
-          status: imageError.response?.status,
-          statusText: imageError.response?.statusText
+          message: errorMessage,
+          details: errorDetails
         });
+        
         setError('Error al subir imagen. Intenta con otra imagen o más tarde.');
         setLoading(false);
         return;
@@ -363,8 +393,7 @@ const handleSubmit = async (e) => {
       salePrice: parseFloat(formData.salePrice) || 0,
       stock: parseInt(formData.stock, 10) || 0,
       lastPurchasePrice: parseFloat(formData.lastPurchasePrice) || 0,
-      image: imageId,
-      tenantId: 'demo' // Añadir el tenantId al producto
+      image: imageId
     };
     
     console.log('Enviando datos del producto:', productData);

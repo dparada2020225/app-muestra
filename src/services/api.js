@@ -1,4 +1,4 @@
-// src/services/api.js
+// src/services/api.js (fragmento inicial con los interceptores)
 import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
@@ -6,87 +6,42 @@ console.log('API URL configurada:', API_URL);
 
 export const getAuthenticatedImageUrl = (imageId) => {
   if (!imageId) return null;
-  const token = localStorage.getItem('token');
-  return `${API_URL}/images/${imageId}${token ? `?token=${token}` : ''}`;
+  
+  // Obtener el tenant actual
+  let tenantSubdomain = 'demo';
+  try {
+    const currentTenantData = localStorage.getItem('currentTenant');
+    if (currentTenantData) {
+      const parsedTenant = JSON.parse(currentTenantData);
+      tenantSubdomain = parsedTenant.subdomain || 'demo';
+    }
+  } catch (e) {
+    console.error('Error al obtener tenant para URL de imagen:', e);
+  }
+  
+  return `${API_URL}/images/${imageId}?tenantId=${tenantSubdomain}`;
 };
 
-// Interceptor para añadir el token a todas las solicitudes
-axios.interceptors.request.use(
-  config => {
-    // Obtener el subdominio actual
-    const host = window.location.host;
-    const hostParts = host.split('.');
-    
-    // Si hay un subdominio, agregarlo como header
-    if (hostParts.length > 1) {
-      const subdomain = hostParts[0];
-      config.headers['X-Tenant-ID'] = subdomain;
-      console.log(`Enviando petición con X-Tenant-ID: ${subdomain}`);
-    }
-    
-    // Añadir el token si existe
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
-    }
-    
-    return config;
-  },
-  error => {
-    return Promise.reject(error);
-  }
-);
-
-axios.interceptors.response.use(
-  response => response,
-  error => {
-    // Registrar errores para depuración
-    console.error('Error en solicitud API:', error);
-    
-    if (error.response) {
-      // La solicitud fue hecha y el servidor respondió con un código de estado
-      // que no está en el rango 2xx
-      console.error('Datos de respuesta de error:', error.response.data);
-      console.error('Código de estado:', error.response.status);
-      console.error('Headers de respuesta:', error.response.headers);
-      
-      // Manejar token expirado o inválido (401)
-      if (error.response.status === 401) {
-        console.warn('Error de autenticación detectado, limpiando sesión...');
-        localStorage.removeItem('token');
-        delete axios.defaults.headers.common['Authorization'];
-        
-        // Si estamos en un entorno con window, podemos intentar redireccionar
-        if (typeof window !== 'undefined') {
-          console.log('Redirigiendo a login...');
-          window.location.href = '/login';
-        }
-      }
-    } else if (error.request) {
-      // La solicitud fue hecha pero no se recibió respuesta
-      console.error('No se recibió respuesta:', error.request);
-      
-      // Intentar detectar si es un problema de CORS
-      if (error.message && error.message.includes('Network Error')) {
-        console.error('Posible error de CORS o problema de red');
-      }
-    } else {
-      // Algo sucedió al configurar la solicitud que desencadenó un error
-      console.error('Error al configurar la solicitud:', error.message);
-    }
-    
-    return Promise.reject(error);
-  }
-);
+// Obtener el tenant actual de manera consistente
 const getCurrentTenant = () => {
-  // try {
-  //   const cachedTenant = localStorage.getItem('currentTenant');
-  //   if (cachedTenant) {
-  //     return JSON.parse(cachedTenant).id || 'demo';
-  //   }
-  // } catch (e) {
-  //   console.error('Error al obtener el tenant del localStorage:', e);
-  // }
+  try {
+    const cachedTenant = localStorage.getItem('currentTenant');
+    if (cachedTenant) {
+      const tenant = JSON.parse(cachedTenant);
+      return tenant.subdomain || 'demo';
+    }
+  } catch (e) {
+    console.error('Error al obtener el tenant del localStorage:', e);
+  }
+  
+  // Intentar obtener del subdominio actual
+  if (typeof window !== 'undefined') {
+    const hostParts = window.location.hostname.split('.');
+    if (hostParts.length > 1 && hostParts[0] !== 'www' && hostParts[0] !== 'localhost') {
+      return hostParts[0];
+    }
+  }
+  
   return 'demo'; // Tenant por defecto
 };
 
@@ -107,9 +62,9 @@ axios.interceptors.request.use(
     
     // Si es una solicitud FormData (para subir archivos)
     if (config.data instanceof FormData) {
-      // Añadir tenantId al FormData
+      // Añadir tenantId al FormData si aún no está presente
       if (!config.data.has('tenantId')) {
-        console.log('Añadiendo tenantId al FormData para subida de archivo:', tenantId);
+        console.log('Añadiendo tenantId al FormData:', tenantId);
         config.data.append('tenantId', tenantId);
       }
     } 
