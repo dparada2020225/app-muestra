@@ -1,7 +1,8 @@
 // src/context/TransactionContext.js
-import React, { createContext, useState, useContext, useCallback } from 'react';
-import { purchaseService, saleService } from '../services/api';
+import React, { createContext, useState, useContext, useCallback, useEffect } from 'react';
+import axios from 'axios';
 import { useAuth } from './AuthContext';
+import { useTenant } from './TenantContext';
 
 const TransactionContext = createContext();
 
@@ -21,13 +22,17 @@ export const TransactionProvider = ({ children }) => {
   // Flag para controlar si los datos ya fueron cargados
   const [dataInitialized, setDataInitialized] = useState(false);
 
-  // Obtener información de autenticación
-  const { isAuthenticated, isAdmin } = useAuth();
+  // Obtener información de autenticación y tenant
+  const { user, isAuthenticated, token } = useAuth();
+  const { currentTenant } = useTenant();
+  
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
   
   // Cargar compras - usando useCallback para evitar recreación de funciones
   const fetchPurchases = useCallback(async (startDate, endDate) => {
-    // No realizar peticiones si el usuario no está autenticado o no es admin
-    if (!isAuthenticated || !isAdmin) {
+    // No realizar peticiones si el usuario no está autenticado
+    if (!isAuthenticated || !token) {
+      console.log("No autenticado. No se pueden cargar compras.");
       return [];
     }
 
@@ -35,28 +40,54 @@ export const TransactionProvider = ({ children }) => {
       setPurchasesLoading(true);
       setPurchasesError(null);
       
+      console.log("Cargando compras con token:", token);
+      
       // Construir parámetros de consulta para el filtro de fecha
       let params = {};
       if (startDate && endDate) {
-        params = { startDate, endDate };
+        params.startDate = startDate;
+        params.endDate = endDate;
       }
       
-      const data = await purchaseService.getAllPurchases(params);
-      setPurchases(data);
-      return data;
+      // Usar url específica para compras
+      const url = `${API_URL}/api/purchases`;
+      console.log("Solicitud a:", url, "con params:", params);
+      
+      const response = await axios.get(url, {
+        params,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log("Respuesta de compras:", response.data);
+      setPurchases(response.data);
+      return response.data;
     } catch (error) {
       console.error('Error al cargar compras:', error);
-      setPurchasesError('Error al cargar el historial de compras');
+      if (error.response) {
+        console.error('Respuesta de error:', error.response.data);
+        console.error('Status:', error.response.status);
+        setPurchasesError(`Error ${error.response.status}: ${error.response.data.message || 'Error al cargar compras'}`);
+      } else if (error.request) {
+        console.error('No se recibió respuesta:', error.request);
+        setPurchasesError('Error de red: No se pudo conectar con el servidor');
+      } else {
+        console.error('Error:', error.message);
+        setPurchasesError(`Error: ${error.message}`);
+      }
       return [];
     } finally {
       setPurchasesLoading(false);
     }
-  }, [isAuthenticated, isAdmin]);
+  }, [isAuthenticated, token, API_URL]);
   
   // Cargar ventas
   const fetchSales = useCallback(async (startDate, endDate) => {
-    // No realizar peticiones si el usuario no está autenticado o no es admin
-    if (!isAuthenticated || !isAdmin) {
+    // No realizar peticiones si el usuario no está autenticado
+    if (!isAuthenticated || !token) {
+      console.log("No autenticado. No se pueden cargar ventas.");
       return [];
     }
 
@@ -64,35 +95,76 @@ export const TransactionProvider = ({ children }) => {
       setSalesLoading(true);
       setSalesError(null);
       
+      console.log("Cargando ventas con token:", token);
+      
       // Construir parámetros de consulta para el filtro de fecha
       let params = {};
       if (startDate && endDate) {
-        params = { startDate, endDate };
+        params.startDate = startDate;
+        params.endDate = endDate;
       }
       
-      const data = await saleService.getAllSales(params);
-      setSales(data);
-      return data;
+      // Usar url específica para ventas
+      const url = `${API_URL}/api/sales`;
+      console.log("Solicitud a:", url, "con params:", params);
+      
+      const response = await axios.get(url, {
+        params,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log("Respuesta de ventas:", response.data);
+      setSales(response.data);
+      return response.data;
     } catch (error) {
       console.error('Error al cargar ventas:', error);
-      setSalesError('Error al cargar el historial de ventas');
+      if (error.response) {
+        console.error('Respuesta de error:', error.response.data);
+        console.error('Status:', error.response.status);
+        setSalesError(`Error ${error.response.status}: ${error.response.data.message || 'Error al cargar ventas'}`);
+      } else if (error.request) {
+        console.error('No se recibió respuesta:', error.request);
+        setSalesError('Error de red: No se pudo conectar con el servidor');
+      } else {
+        console.error('Error:', error.message);
+        setSalesError(`Error: ${error.message}`);
+      }
       return [];
     } finally {
       setSalesLoading(false);
     }
-  }, [isAuthenticated, isAdmin]);
+  }, [isAuthenticated, token, API_URL]);
   
   // Crear nueva compra
   const createPurchase = async (purchaseData) => {
     try {
       setPurchasesLoading(true);
       setPurchasesError(null);
-      const result = await purchaseService.createPurchase(purchaseData);
-      setPurchases(prev => [result, ...prev]); // Añadir al inicio de la lista
-      return result;
+      
+      const url = `${API_URL}/api/purchases`;
+      console.log("Creando compra en:", url, "con datos:", purchaseData);
+      
+      const response = await axios.post(url, purchaseData, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log("Respuesta de creación de compra:", response.data);
+      setPurchases(prev => [response.data, ...prev]); // Añadir al inicio de la lista
+      return response.data;
     } catch (error) {
       console.error('Error al crear compra:', error);
-      setPurchasesError('Error al registrar la compra');
+      if (error.response) {
+        console.error('Respuesta de error:', error.response.data);
+        setPurchasesError(error.response.data.message || 'Error al registrar la compra');
+      } else {
+        setPurchasesError('Error de conexión al servidor');
+      }
       throw error;
     } finally {
       setPurchasesLoading(false);
@@ -104,12 +176,28 @@ export const TransactionProvider = ({ children }) => {
     try {
       setSalesLoading(true);
       setSalesError(null);
-      const result = await saleService.createSale(saleData);
-      setSales(prev => [result, ...prev]); // Añadir al inicio de la lista
-      return result;
+      
+      const url = `${API_URL}/api/sales`;
+      console.log("Creando venta en:", url, "con datos:", saleData);
+      
+      const response = await axios.post(url, saleData, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log("Respuesta de creación de venta:", response.data);
+      setSales(prev => [response.data, ...prev]); // Añadir al inicio de la lista
+      return response.data;
     } catch (error) {
       console.error('Error al crear venta:', error);
-      setSalesError('Error al registrar la venta');
+      if (error.response) {
+        console.error('Respuesta de error:', error.response.data);
+        setSalesError(error.response.data.message || 'Error al registrar la venta');
+      } else {
+        setSalesError('Error de conexión al servidor');
+      }
       throw error;
     } finally {
       setSalesLoading(false);
@@ -118,12 +206,18 @@ export const TransactionProvider = ({ children }) => {
   
   // Obtener información de una compra específica
   const getPurchase = async (id) => {
-    if (!isAuthenticated || !isAdmin) return null;
-    
     try {
       setPurchasesLoading(true);
       setPurchasesError(null);
-      return await purchaseService.getPurchaseById(id);
+      
+      const url = `${API_URL}/api/purchases/${id}`;
+      const response = await axios.get(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      return response.data;
     } catch (error) {
       console.error('Error al obtener detalle de compra:', error);
       setPurchasesError('Error al obtener información de la compra');
@@ -135,12 +229,18 @@ export const TransactionProvider = ({ children }) => {
   
   // Obtener información de una venta específica
   const getSale = async (id) => {
-    if (!isAuthenticated || !isAdmin) return null;
-    
     try {
       setSalesLoading(true);
       setSalesError(null);
-      return await saleService.getSaleById(id);
+      
+      const url = `${API_URL}/api/sales/${id}`;
+      const response = await axios.get(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      return response.data;
     } catch (error) {
       console.error('Error al obtener detalle de venta:', error);
       setSalesError('Error al obtener información de la venta');
@@ -150,9 +250,9 @@ export const TransactionProvider = ({ children }) => {
     }
   };
   
-  // Recargar todos los datos de transacciones solo cuando se necesite
+  // Recargar todos los datos de transacciones
   const refreshAll = useCallback(async () => {
-    if (!isAuthenticated || !isAdmin) return;
+    if (!isAuthenticated || !token) return;
     
     try {
       await Promise.all([fetchPurchases(), fetchSales()]);
@@ -160,18 +260,23 @@ export const TransactionProvider = ({ children }) => {
     } catch (error) {
       console.error('Error al cargar datos de transacciones:', error);
     }
-  }, [fetchPurchases, fetchSales, isAuthenticated, isAdmin]);
+  }, [fetchPurchases, fetchSales, isAuthenticated, token]);
   
-  // Inicializar datos solo cuando el usuario está autenticado y es admin
-  // y solo cuando se navega a la página de transacciones
+  // Esta función se llama cuando el componente se monta o cuando el usuario/tenant cambia
   const initializeData = useCallback(() => {
-    if (isAuthenticated && isAdmin && !dataInitialized) {
+    if (isAuthenticated && token && !dataInitialized) {
+      console.log("Inicializando datos de transacciones...");
       refreshAll();
     }
-  }, [isAuthenticated, isAdmin, dataInitialized, refreshAll]);
+  }, [isAuthenticated, token, dataInitialized, refreshAll]);
   
-  // NO cargar datos automáticamente al montar el componente
-  // Ahora la carga se hará explícitamente cuando se necesite
+  // Carga automática cuando el usuario está autenticado y hay un tenant
+  useEffect(() => {
+    if (isAuthenticated && token && currentTenant && !dataInitialized) {
+      console.log("Cargando automáticamente datos de transacciones...");
+      initializeData();
+    }
+  }, [isAuthenticated, token, currentTenant, dataInitialized, initializeData]);
   
   // Valor del contexto
   const value = {

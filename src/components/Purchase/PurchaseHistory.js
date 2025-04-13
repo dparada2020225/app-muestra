@@ -1,8 +1,8 @@
-// src/components/Purchase/PurchaseHistory.js
+// src/components/Purchase/PurchaseHistory.js - corregido
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useTransactions } from '../../context/TransactionContext';
-import Modal from '../Modal/Modal';
+import Modal from '../../components/Modal/Modal';
 
 const Container = styled.div`
   display: flex;
@@ -198,23 +198,20 @@ const PurchaseHistory = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [localDataFetched, setLocalDataFetched] = useState(false);
   
   const { 
     purchases, 
     purchasesLoading, 
     purchasesError, 
-    fetchPurchases
+    fetchPurchases,
+    refreshAll
   } = useTransactions();
   
-  // Cargar compras solo cuando el componente se monta o cuando se solicita explícitamente,
-  // evitando cargas automáticas en cada render
+  // Al montar el componente, forzar una carga de datos
   useEffect(() => {
-    if (!localDataFetched && !purchasesLoading) {
-      fetchPurchases();
-      setLocalDataFetched(true);
-    }
-  }, [fetchPurchases, localDataFetched, purchasesLoading]);
+    console.log("PurchaseHistory montado, cargando datos...");
+    fetchPurchases();
+  }, [fetchPurchases]);
   
   // Función para filtrar compras por rango de fechas
   const handleFilterByDate = () => {
@@ -284,8 +281,6 @@ const PurchaseHistory = () => {
   
   return (
     <Container>
-      <Title>Historial de Compras</Title>
-      
       <FilterContainer>
         <DateRangeFilter>
           <label htmlFor="startDate">Desde:</label>

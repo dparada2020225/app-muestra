@@ -1,8 +1,8 @@
-// src/components/Sale/SaleHistory.js
+// src/components/Sale/SaleHistory.js - corregido
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useTransactions } from '../../context/TransactionContext';
-import Modal from '../Modal/Modal';
+import Modal from '../../components/Modal/Modal';
 
 const Container = styled.div`
   display: flex;
@@ -198,7 +198,6 @@ const SaleHistory = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [localDataFetched, setLocalDataFetched] = useState(false);
   
   const { 
     sales, 
@@ -207,14 +206,11 @@ const SaleHistory = () => {
     fetchSales
   } = useTransactions();
   
-  // Cargar ventas solo cuando el componente se monta o cuando se solicita explícitamente,
-  // evitando cargas automáticas en cada render
+  // Al montar el componente, forzar una carga de datos
   useEffect(() => {
-    if (!localDataFetched && !salesLoading) {
-      fetchSales();
-      setLocalDataFetched(true);
-    }
-  }, [fetchSales, localDataFetched, salesLoading]);
+    console.log("SaleHistory montado, cargando datos...");
+    fetchSales();
+  }, [fetchSales]);
   
   // Función para filtrar ventas por rango de fechas
   const handleFilterByDate = () => {
@@ -279,8 +275,6 @@ const SaleHistory = () => {
   
   return (
     <Container>
-      <Title>Historial de Ventas</Title>
-      
       <FilterContainer>
         <DateRangeFilter>
           <label htmlFor="startDateSale">Desde:</label>
