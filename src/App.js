@@ -70,7 +70,7 @@ function App() {
                 
                 {/* Rutas protegidas (requieren autenticación y tenant) */}
                 <Route element={<ProtectedRoute requireTenant={true} />}>
-                  <Route path="/dashboard" element={
+                  <Route path="/products" element={
                     <ProductProvider>
                       <Dashboard />
                     </ProductProvider>

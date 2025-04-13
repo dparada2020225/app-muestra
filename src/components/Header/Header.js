@@ -189,7 +189,7 @@ const Header = () => {
   return (
     <HeaderContainer>
       <Content>
-        <Logo to={isAuthenticated ? "/dashboard" : "/"}>
+        <Logo to={isAuthenticated ? "/products" : "/"}>
           <LogoContainer>
             {currentTenant && currentTenant.logo ? (
               <LogoImage 

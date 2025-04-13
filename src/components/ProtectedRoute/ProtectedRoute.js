@@ -34,7 +34,7 @@ const ProtectedRoute = ({
   // Verificar los requisitos de rol específicos
   if (requireSuperAdmin && user?.role !== 'superAdmin') {
     console.log("Se requiere superAdmin pero el usuario no lo es:", user?.role);
-    return <Navigate to="/dashboard" />;
+    return <Navigate to="/products" />;
   }
   
   // Si requireAdmin es true, verificar roles de administración
@@ -43,7 +43,7 @@ const ProtectedRoute = ({
       user?.role !== 'superAdmin' && 
       user?.role !== 'tenantAdmin') {
     console.log("Se requiere admin pero el usuario no lo es:", user?.role);
-    return <Navigate to="/dashboard" />;
+    return <Navigate to="/products" />;
   }
   
   // Si requireTenantAdmin es true, verificar que el usuario sea tenantAdmin
@@ -51,7 +51,7 @@ const ProtectedRoute = ({
       user?.role !== 'tenantAdmin' && 
       user?.role !== 'superAdmin') {
     console.log("Se requiere tenant admin pero el usuario no lo es:", user?.role);
-    return <Navigate to="/dashboard" />;
+    return <Navigate to="/products" />;
   }
   
   // Si requireTenantManager es true, verificar que el usuario sea tenantManager o superior
@@ -60,7 +60,7 @@ const ProtectedRoute = ({
       user?.role !== 'tenantAdmin' && 
       user?.role !== 'superAdmin') {
     console.log("Se requiere tenant manager pero el usuario no lo es:", user?.role);
-    return <Navigate to="/dashboard" />;
+    return <Navigate to="/products" />;
   }
   
   // Si todo está bien, mostrar las rutas hijas

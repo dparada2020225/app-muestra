@@ -281,7 +281,7 @@ const TenantDashboard = () => {
           <ActionDescription>Agregar un nuevo usuario al sistema</ActionDescription>
         </ActionCard>
         
-        <ActionCard to="/dashboard">
+        <ActionCard to="/products">
           <ActionIcon>📦</ActionIcon>
           <ActionTitle>Productos</ActionTitle>
           <ActionDescription>Gestionar inventario de productos</ActionDescription>

@@ -64,7 +64,7 @@ const TenantRedirect = () => {
       case 'tenantManager':
         return '/admin/transactions';
       default: // tenantUser o cualquier otro
-        return '/dashboard';
+        return '/products';
     }
   };
   
@@ -123,7 +123,7 @@ const TenantRedirect = () => {
         // Si el usuario tiene un tenantId, intentar cargar ese tenant
         if (user?.tenantId) {
           console.log("Intentando cargar tenant del usuario:", user.tenantId);
-          navigate('/dashboard');
+          navigate('/products');
           return;
         }
         

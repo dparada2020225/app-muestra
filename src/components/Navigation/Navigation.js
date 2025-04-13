@@ -53,7 +53,7 @@ const Navigation = () => {
       )}
       
       {/* Enlaces visibles para todos los usuarios autenticados */}
-      <StyledNavLink to="/dashboard">Productos</StyledNavLink>
+      <StyledNavLink to="/products">Productos</StyledNavLink>
       
       {/* Enlaces para tenantManager y superiores */}
       {(isTenantManager || isTenantAdmin || isSuperAdmin) && (
