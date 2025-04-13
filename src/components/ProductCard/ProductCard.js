@@ -3,6 +3,16 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import { getColorCode } from '../../utils/colorUtils';
 import ImageViewer from '../ImageViewer/ImageViewer';
+import { useTenant } from '../../context/TenantContext';
+
+const getColorFromString = (str) => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const color = Math.abs(hash).toString(16).substring(0, 6);
+  return `#${'0'.repeat(6 - color.length)}${color}`;
+};
 
 const Card = styled.div`
   background-color: ${props => props.theme.colors.cardBackground};
@@ -146,11 +156,16 @@ const ColorDot = styled.span`
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
+
 const ProductCard = ({ product, onEdit, onDelete, onAddToSale, isAdmin }) => {
   const [imageError, setImageError] = useState(false);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
-
+  const { currentTenant } = useTenant();
+  
   const handleImageError = () => {
+    console.error(`Error al cargar imagen para producto: ${product.name}`);
+    console.error(`ID de imagen: ${product.image}`);
+    console.error(`URL intentada: ${fullImageUrl}`);
     setImageError(true);
   };
 
@@ -160,7 +175,28 @@ const ProductCard = ({ product, onEdit, onDelete, onAddToSale, isAdmin }) => {
     }
   };
 
-  const fullImageUrl = `${API_URL}/images/${product.image}`;
+  // Función para obtener el color a partir del nombre del producto
+  const getColorFromString = (str) => {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const color = Math.abs(hash).toString(16).substring(0, 6);
+    return `#${'0'.repeat(6 - color.length)}${color}`;
+  };
+
+  const backgroundColor = getColorFromString(product.name);
+  const productInitial = product.name.charAt(0).toUpperCase();
+  
+  // Asegurarnos de que tenemos un tenant antes de construir la URL
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+  
+  // Modificar para asegurar que tenantId no es undefined
+  const tenantIdParam = currentTenant?.subdomain || 'demo';
+  
+  const fullImageUrl = product.image 
+    ? `${API_URL}/images/${product.image}?tenantId=${tenantIdParam}`
+    : null;
 
   return (
     <>
@@ -177,8 +213,8 @@ const ProductCard = ({ product, onEdit, onDelete, onAddToSale, isAdmin }) => {
               onError={handleImageError}
             />
           ) : (
-            <Placeholder>
-              {product.name.charAt(0).toUpperCase()}
+            <Placeholder style={{ backgroundColor }}>
+              {productInitial}
             </Placeholder>
           )}
         </ImageContainer>

@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import axios from 'axios';
 import ColorSelector from '../ColorSelector/ColorSelector';
+import { getAuthenticatedImageUrl } from '../../services/api';
 
 const fadeIn = keyframes`
   from {
@@ -254,7 +255,7 @@ const ProductForm = ({ product, onSave, onCancel, availableColors = [] }) => {
       
       // Si hay una imagen, establecer la URL de vista previa
       if (product.image) {
-        setPreviewUrl(`${API_URL}/images/${product.image}`);
+        setPreviewUrl(getAuthenticatedImageUrl(product.image));
       }
     }
   }, [product]);
@@ -317,9 +318,24 @@ const handleSubmit = async (e) => {
       const formDataFile = new FormData();
       formDataFile.append('image', selectedFile);
       
+      // Añadir explícitamente el tenant ID al FormData
+      formDataFile.append('tenantId', 'demo');
+      
       try {
-        console.log('Subiendo imagen...');
-        const uploadResponse = await axios.post(`${API_URL}/upload`, formDataFile);
+        console.log('Subiendo imagen con tenant demo...');
+        
+        // Configurar los headers manualmente para esta solicitud
+        const uploadResponse = await axios.post(
+          `${API_URL}/upload`, 
+          formDataFile,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+              'X-Tenant-ID': 'demo'
+            }
+          }
+        );
+        
         console.log('Respuesta de subida de imagen:', uploadResponse.data);
         imageId = uploadResponse.data.imageId;
       } catch (imageError) {
@@ -347,7 +363,8 @@ const handleSubmit = async (e) => {
       salePrice: parseFloat(formData.salePrice) || 0,
       stock: parseInt(formData.stock, 10) || 0,
       lastPurchasePrice: parseFloat(formData.lastPurchasePrice) || 0,
-      image: imageId
+      image: imageId,
+      tenantId: 'demo' // Añadir el tenantId al producto
     };
     
     console.log('Enviando datos del producto:', productData);

@@ -4,6 +4,11 @@ import axios from 'axios';
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 console.log('API URL configurada:', API_URL);
 
+export const getAuthenticatedImageUrl = (imageId) => {
+  if (!imageId) return null;
+  const token = localStorage.getItem('token');
+  return `${API_URL}/images/${imageId}${token ? `?token=${token}` : ''}`;
+};
 
 // Interceptor para añadir el token a todas las solicitudes
 axios.interceptors.request.use(
@@ -73,13 +78,70 @@ axios.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+const getCurrentTenant = () => {
+  // try {
+  //   const cachedTenant = localStorage.getItem('currentTenant');
+  //   if (cachedTenant) {
+  //     return JSON.parse(cachedTenant).id || 'demo';
+  //   }
+  // } catch (e) {
+  //   console.error('Error al obtener el tenant del localStorage:', e);
+  // }
+  return 'demo'; // Tenant por defecto
+};
+
+// Interceptor para añadir el tenant a todas las solicitudes
+axios.interceptors.request.use(
+  config => {
+    console.log(`Realizando petición a: ${config.url}`);
+    
+    // Añadir token de autorización si existe
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    // Añadir tenant ID a los headers
+    const tenantId = getCurrentTenant();
+    config.headers['X-Tenant-ID'] = tenantId;
+    
+    // Si es una solicitud FormData (para subir archivos)
+    if (config.data instanceof FormData) {
+      // Añadir tenantId al FormData
+      if (!config.data.has('tenantId')) {
+        console.log('Añadiendo tenantId al FormData para subida de archivo:', tenantId);
+        config.data.append('tenantId', tenantId);
+      }
+    } 
+    // Si es un objeto regular
+    else if (config.data && typeof config.data === 'object' && !config.data.tenantId) {
+      console.log('Añadiendo tenantId a los datos de la solicitud:', tenantId);
+      config.data = {
+        ...config.data,
+        tenantId: tenantId
+      };
+    }
+    
+    return config;
+  },
+  error => {
+    console.error('Error en la configuración de la solicitud:', error);
+    return Promise.reject(error);
+  }
+);
 
 export const productService = {
   // Obtener todos los productos
   getAllProducts: async () => {
     try {
       console.log('Obteniendo todos los productos...');
-      const response = await axios.get(`${API_URL}/api/products`);
+      
+      // Añadir el tenant a los headers
+      const headers = {
+        'X-Tenant-ID': 'demo'
+      };
+      
+      const response = await axios.get(`${API_URL}/api/products`, { headers });
       console.log('Productos obtenidos:', response.data.length);
       return response.data;
     } catch (error) {
@@ -93,7 +155,18 @@ export const productService = {
   createProduct: async (productData) => {
     try {
       console.log('Creando nuevo producto con datos:', productData);
-      const response = await axios.post(`${API_URL}/api/products`, productData);
+      
+      // Asegurarse de que el tenant esté incluido en los datos
+      const dataWithTenant = {
+        ...productData,
+        tenantId: 'demo'
+      };
+      
+      const headers = {
+        'X-Tenant-ID': 'demo'
+      };
+      
+      const response = await axios.post(`${API_URL}/api/products`, dataWithTenant, { headers });
       console.log('Producto creado con éxito:', response.data);
       return response.data;
     } catch (error) {
@@ -107,7 +180,18 @@ export const productService = {
   updateProduct: async (id, productData) => {
     try {
       console.log(`Actualizando producto ${id} con datos:`, productData);
-      const response = await axios.put(`${API_URL}/api/products/${id}`, productData);
+      
+      // Asegurarse de que el tenant esté incluido en los datos
+      const dataWithTenant = {
+        ...productData,
+        tenantId: 'demo'
+      };
+      
+      const headers = {
+        'X-Tenant-ID': 'demo'
+      };
+      
+      const response = await axios.put(`${API_URL}/api/products/${id}`, dataWithTenant, { headers });
       console.log('Producto actualizado con éxito:', response.data);
       return response.data;
     } catch (error) {
@@ -121,7 +205,12 @@ export const productService = {
   deleteProduct: async (id) => {
     try {
       console.log(`Eliminando producto con ID: ${id}`);
-      await axios.delete(`${API_URL}/api/products/${id}`);
+      
+      const headers = {
+        'X-Tenant-ID': 'demo'
+      };
+      
+      await axios.delete(`${API_URL}/api/products/${id}`, { headers });
       console.log('Producto eliminado con éxito');
       return true;
     } catch (error) {
@@ -137,12 +226,14 @@ export const productService = {
       console.log('Subiendo imagen:', file.name);
       const formData = new FormData();
       formData.append('image', file);
+      formData.append('tenantId', 'demo'); // Añadir el tenant al FormData
       
-      const response = await axios.post(`${API_URL}/upload`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
+      const headers = {
+        'Content-Type': 'multipart/form-data',
+        'X-Tenant-ID': 'demo' // Añadir el tenant a los headers
+      };
+      
+      const response = await axios.post(`${API_URL}/upload`, formData, { headers });
       
       console.log('Imagen subida correctamente:', response.data);
       return response.data;
