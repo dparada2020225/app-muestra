@@ -167,33 +167,6 @@ const FinancialSummary = ({
           )}
         </SummaryItem>
       </SummaryGrid>
-      
-      <ComparisonRow>
-        <ComparisonLabel>Transacciones Totales</ComparisonLabel>
-        {loading ? (
-          <LoadingPlaceholder />
-        ) : (
-          <ComparisonValue>
-            Ventas: {data.recentSalesCount || 0} | Compras: {data.recentPurchasesCount || 0}
-          </ComparisonValue>
-        )}
-      </ComparisonRow>
-      
-      <ComparisonRow>
-        <ComparisonLabel>Promedio por Transacción</ComparisonLabel>
-        {loading ? (
-          <LoadingPlaceholder />
-        ) : (
-          <ComparisonValue>
-            Ventas: {formatCurrency(data.recentSalesCount 
-              ? data.recentSalesAmount / data.recentSalesCount 
-              : 0)} 
-            | Compras: {formatCurrency(data.recentPurchasesCount 
-              ? data.recentPurchasesAmount / data.recentPurchasesCount 
-              : 0)}
-          </ComparisonValue>
-        )}
-      </ComparisonRow>
     </Container>
   );
 };

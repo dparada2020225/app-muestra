@@ -18,6 +18,11 @@ import NotFound from './pages/NotFound/NotFound';
 import TenantThemeProvider from './components/TenantThemeProvider/TenantThemeProvider';
 import TenantSettings from './pages/TenantSettings/TenantSettings';
 import TenantDashboard from './pages/TenantDashboard/TenantDashboard';
+import SuperAdminDashboard from './pages/Admin/SuperAdminDashboard';
+import TenantForm from './pages/Admin/TenantForm';
+import TenantUsersManagement from './pages/Admin/TenantUsersManagement';
+import ImpersonateUser from './pages/Admin/ImpersonateUser';
+import ImpersonationBanner from './components/ImpersonationBanner/ImpersonationBanner';
 
 // Importar páginas de error de tenant
 import TenantError from './pages/TenantError/TenantError';
@@ -48,6 +53,7 @@ function App() {
         <AuthProvider>
           <TenantInitializer>
             <TenantThemeProvider>
+            <ImpersonationBanner />
               <Header />
               <Routes>
                 {/* TenantRedirect verifica si estamos en el dominio principal o en un subdominio */}
@@ -97,6 +103,11 @@ function App() {
                 {/* Rutas específicas para superAdmin */}
                 <Route element={<ProtectedRoute requireSuperAdmin={true} />}>
                   <Route path="/admin/tenant-dashboard" element={<div>Panel de SuperAdmin</div>} />
+                  <Route path="/admin/tenant-dashboard" element={<SuperAdminDashboard />} />
+                  <Route path="/admin/tenants/new" element={<TenantForm />} />
+                  <Route path="/admin/tenants/:id" element={<TenantForm />} />
+                  <Route path="/admin/tenants/:tenantId/users" element={<TenantUsersManagement />} />
+                  <Route path="/admin/impersonate/:tenantId" element={<ImpersonateUser />} />
                 </Route>
                 
                 {/* Rutas específicas para el dominio principal (sin tenant) */}
