@@ -7,17 +7,8 @@ console.log('API URL configurada:', API_URL);
 export const getAuthenticatedImageUrl = (imageId) => {
   if (!imageId) return null;
   
-  // Obtener el tenant actual
-  let tenantSubdomain = 'demo';
-  try {
-    const currentTenantData = localStorage.getItem('currentTenant');
-    if (currentTenantData) {
-      const parsedTenant = JSON.parse(currentTenantData);
-      tenantSubdomain = parsedTenant.subdomain || 'demo';
-    }
-  } catch (e) {
-    console.error('Error al obtener tenant para URL de imagen:', e);
-  }
+  // Obtener el tenant utilizando la función mejorada
+  const tenantSubdomain = getCurrentTenant();
   
   return `${API_URL}/images/${imageId}?tenantId=${tenantSubdomain}`;
 };
@@ -25,31 +16,53 @@ export const getAuthenticatedImageUrl = (imageId) => {
 // Obtener el tenant actual de manera consistente
 const getCurrentTenant = () => {
   try {
+    // Primero intentar obtener del localStorage
     const cachedTenant = localStorage.getItem('currentTenant');
     if (cachedTenant) {
       const tenant = JSON.parse(cachedTenant);
-      return tenant.subdomain || 'demo';
+      if (tenant && tenant.subdomain) {
+        return tenant.subdomain;
+      }
     }
+    
+    // Si no hay dato en localStorage, intentar obtener del hostname
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      
+      // Para desarrollo local (localhost)
+      if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        // Intentar obtener de los parámetros de URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const tenantParam = urlParams.get('tenant');
+        if (tenantParam) {
+          return tenantParam;
+        }
+        
+        // Intentar obtener del subdominio de localhost
+        const parts = hostname.split('.');
+        if (parts.length > 1 && parts[0] !== 'www' && parts[0] !== 'localhost') {
+          return parts[0];
+        }
+      } else {
+        // En producción, obtener del subdominio
+        const parts = hostname.split('.');
+        if (parts.length >= 2 && parts[0] !== 'www') {
+          return parts[0];
+        }
+      }
+    }
+    
+    console.warn('No se pudo determinar el tenant, usando "demo" por defecto');
+    return 'demo'; // Valor por defecto
   } catch (e) {
-    console.error('Error al obtener el tenant del localStorage:', e);
+    console.error('Error al obtener el tenant:', e);
+    return 'demo'; // Valor por defecto en caso de error
   }
-  
-  // Intentar obtener del subdominio actual
-  if (typeof window !== 'undefined') {
-    const hostParts = window.location.hostname.split('.');
-    if (hostParts.length > 1 && hostParts[0] !== 'www' && hostParts[0] !== 'localhost') {
-      return hostParts[0];
-    }
-  }
-  
-  return 'demo'; // Tenant por defecto
 };
 
 // Interceptor para añadir el tenant a todas las solicitudes
 axios.interceptors.request.use(
   config => {
-    console.log(`Realizando petición a: ${config.url}`);
-    
     // Añadir token de autorización si existe
     const token = localStorage.getItem('token');
     if (token) {
@@ -57,20 +70,20 @@ axios.interceptors.request.use(
     }
     
     // Añadir tenant ID a los headers
-    const tenantId = getCurrentTenant();
-    config.headers['X-Tenant-ID'] = tenantId;
+    const tenantId = getCurrentTenant(); // Usar la función mejorada
+    if (tenantId) {
+      config.headers['X-Tenant-ID'] = tenantId;
+    }
     
     // Si es una solicitud FormData (para subir archivos)
     if (config.data instanceof FormData) {
       // Añadir tenantId al FormData si aún no está presente
-      if (!config.data.has('tenantId')) {
-        console.log('Añadiendo tenantId al FormData:', tenantId);
+      if (!config.data.has('tenantId') && tenantId) {
         config.data.append('tenantId', tenantId);
       }
     } 
     // Si es un objeto regular
-    else if (config.data && typeof config.data === 'object' && !config.data.tenantId) {
-      console.log('Añadiendo tenantId a los datos de la solicitud:', tenantId);
+    else if (config.data && typeof config.data === 'object' && !config.data.tenantId && tenantId) {
       config.data = {
         ...config.data,
         tenantId: tenantId
@@ -80,7 +93,6 @@ axios.interceptors.request.use(
     return config;
   },
   error => {
-    console.error('Error en la configuración de la solicitud:', error);
     return Promise.reject(error);
   }
 );
@@ -90,10 +102,10 @@ export const productService = {
   getAllProducts: async () => {
     try {
       console.log('Obteniendo todos los productos...');
-      
+      const tenantSubdomain = getCurrentTenant();
       // Añadir el tenant a los headers
       const headers = {
-        'X-Tenant-ID': 'demo'
+        'X-Tenant-ID': tenantSubdomain
       };
       
       const response = await axios.get(`${API_URL}/api/products`, { headers });
@@ -111,14 +123,17 @@ export const productService = {
     try {
       console.log('Creando nuevo producto con datos:', productData);
       
+      // Obtener el tenant actual (usar la función mejorada getCurrentTenant)
+      const tenantSubdomain = getCurrentTenant();
+      
       // Asegurarse de que el tenant esté incluido en los datos
       const dataWithTenant = {
         ...productData,
-        tenantId: 'demo'
+        tenantId: tenantSubdomain
       };
       
       const headers = {
-        'X-Tenant-ID': 'demo'
+        'X-Tenant-ID': tenantSubdomain
       };
       
       const response = await axios.post(`${API_URL}/api/products`, dataWithTenant, { headers });
@@ -136,15 +151,20 @@ export const productService = {
     try {
       console.log(`Actualizando producto ${id} con datos:`, productData);
       
+      // Obtener el tenant actual (usar la función mejorada getCurrentTenant)
+      const tenantSubdomain = getCurrentTenant();
+      
       // Asegurarse de que el tenant esté incluido en los datos
       const dataWithTenant = {
         ...productData,
-        tenantId: 'demo'
+        tenantId: tenantSubdomain
       };
       
       const headers = {
-        'X-Tenant-ID': 'demo'
+        'X-Tenant-ID': tenantSubdomain
       };
+      
+      console.log(`Enviando solicitud con tenant: ${tenantSubdomain}`);
       
       const response = await axios.put(`${API_URL}/api/products/${id}`, dataWithTenant, { headers });
       console.log('Producto actualizado con éxito:', response.data);
@@ -160,9 +180,9 @@ export const productService = {
   deleteProduct: async (id) => {
     try {
       console.log(`Eliminando producto con ID: ${id}`);
-      
+      const tenantSubdomain = getCurrentTenant();
       const headers = {
-        'X-Tenant-ID': 'demo'
+        'X-Tenant-ID': tenantSubdomain
       };
       
       await axios.delete(`${API_URL}/api/products/${id}`, { headers });
@@ -181,11 +201,12 @@ export const productService = {
       console.log('Subiendo imagen:', file.name);
       const formData = new FormData();
       formData.append('image', file);
-      formData.append('tenantId', 'demo'); // Añadir el tenant al FormData
+      const tenantSubdomain = getCurrentTenant();
+      formData.append('tenantId', tenantSubdomain); // Añadir el tenant al FormData
       
       const headers = {
         'Content-Type': 'multipart/form-data',
-        'X-Tenant-ID': 'demo' // Añadir el tenant a los headers
+        'X-Tenant-ID': tenantSubdomain // Añadir el tenant a los headers
       };
       
       const response = await axios.post(`${API_URL}/upload`, formData, { headers });

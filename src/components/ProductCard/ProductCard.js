@@ -197,7 +197,7 @@ const ProductCard = ({ product, onEdit, onDelete, onAddToSale, isAdmin }) => {
   const fullImageUrl = product.image 
     ? `${API_URL}/images/${product.image}?tenantId=${tenantIdParam}`
     : null;
-
+    
   return (
     <>
       <Card>

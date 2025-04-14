@@ -4,6 +4,7 @@ import styled, { keyframes } from 'styled-components';
 import axios from 'axios';
 import ColorSelector from '../ColorSelector/ColorSelector';
 import { getAuthenticatedImageUrl } from '../../services/api';
+import { useTenant } from '../../context/TenantContext';
 
 const fadeIn = keyframes`
   from {
@@ -222,6 +223,7 @@ const DetailedErrorContent = styled.pre`
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 const ProductForm = ({ product, onSave, onCancel, availableColors = [] }) => {
+  const { currentTenant } = useTenant();
   const [formData, setFormData] = useState({
     _id: '',
     name: '',
@@ -318,18 +320,8 @@ const handleSubmit = async (e) => {
       const formDataFile = new FormData();
       formDataFile.append('image', selectedFile);
       
-      // Obtener el tenant actual (de localStorage o del contexto)
-      const currentTenantData = localStorage.getItem('currentTenant');
-      let tenantSubdomain = 'demo'; // valor por defecto
-      
-      if (currentTenantData) {
-        try {
-          const parsedTenant = JSON.parse(currentTenantData);
-          tenantSubdomain = parsedTenant.subdomain || 'demo';
-        } catch (e) {
-          console.error('Error al parsear tenant del localStorage:', e);
-        }
-      }
+      // Usar el tenant del contexto que ya tenemos disponible
+      const tenantSubdomain = currentTenant?.subdomain || 'demo';
       
       // Añadir explícitamente el tenant ID al FormData
       formDataFile.append('tenantId', tenantSubdomain);
@@ -393,7 +385,9 @@ const handleSubmit = async (e) => {
       salePrice: parseFloat(formData.salePrice) || 0,
       stock: parseInt(formData.stock, 10) || 0,
       lastPurchasePrice: parseFloat(formData.lastPurchasePrice) || 0,
-      image: imageId
+      image: imageId,
+      // Incluir explícitamente el tenantId
+      tenantId: currentTenant?.subdomain || 'demo'
     };
     
     console.log('Enviando datos del producto:', productData);

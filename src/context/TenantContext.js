@@ -58,31 +58,35 @@ export const TenantProvider = ({ children }) => {
   const detectTenant = useCallback(() => {
     const hostname = window.location.hostname;
     
-    // Para desarrollo local (localhost), permitir especificar tenant mediante searchParams
+    // Para desarrollo local (localhost u otras URLs locales)
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      // Primero intentar obtener desde los parámetros de URL
       const urlParams = new URLSearchParams(window.location.search);
       const tenantParam = urlParams.get('tenant');
       
       if (tenantParam) {
+        console.log(`Usando tenant de URL param: ${tenantParam}`);
         return tenantParam;
       }
       
-      // Extraer el subdominio de localhost
+      // Si no hay parámetro, intentar extraer de un subdominio de localhost
       const parts = hostname.split('.');
       if (parts.length > 1 && parts[0] !== 'www' && parts[0] !== 'localhost') {
+        console.log(`Usando subdominio de localhost: ${parts[0]}`);
         return parts[0];
       }
       
-      // MODIFICACIÓN TEMPORAL: Devolver un tenant predeterminado para desarrollo
-      console.log("Usando tenant predeterminado para desarrollo: 'default'");
-      return 'default';
+      // Si llegamos aquí, usar el valor por defecto pero loguear una advertencia
+      console.warn("No se detectó tenant específico, usando 'demo' por defecto");
+      return 'demo'; // Valor por defecto para desarrollo
     }
     
     // En producción, extraer el tenant del subdominio
     const parts = hostname.split('.');
     
     // Si es un subdominio (al menos 3 partes: tenant.domain.tld)
-    if (parts.length >= 3) {
+    if (parts.length >= 2) {
+      console.log(`Subdominio detectado en producción: ${parts[0]}`);
       return parts[0];
     }
     
