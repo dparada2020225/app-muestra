@@ -1,10 +1,14 @@
-// src/pages/TenantDashboard/TenantDashboard.js
+// src/pages/TenantDashboard/TenantDashboard.js - versión actualizada
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTenant } from '../../context/TenantContext';
-import axios from 'axios';
+import StatCard from '../../components/Dashboard/StatCard';
+import DashboardChart from '../../components/Dashboard/DashboardChart';
+import LowStockTable from '../../components/Dashboard/LowStockTable';
+import QuickActions from '../../components/Dashboard/QuickActions';
+import FinancialSummary from '../../components/Dashboard/FinancialSummary';
+import dashboardService from '../../services/dashboardService';
 
 const Container = styled.div`
   max-width: 1200px;
@@ -31,106 +35,15 @@ const DashboardGrid = styled.div`
   margin-bottom: 30px;
 `;
 
-const StatCard = styled.div`
-  background-color: ${props => props.theme.colors.cardBackground};
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: ${props => props.theme.shadows.small};
-  display: flex;
-  flex-direction: column;
-  border-top: 3px solid ${props => props.color || props.theme.colors.primary};
-  transition: transform 0.2s, box-shadow 0.2s;
-  
-  &:hover {
-    transform: translateY(-5px);
-    box-shadow: ${props => props.theme.shadows.medium};
-  }
-`;
-
-const StatTitle = styled.h3`
-  color: ${props => props.theme.colors.textLight};
-  font-size: 0.9rem;
-  margin-bottom: 15px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-`;
-
-const StatValue = styled.div`
-  font-size: 2rem;
-  font-weight: bold;
-  color: ${props => props.theme.colors.text};
-  margin-bottom: 5px;
-`;
-
-const StatTrend = styled.div`
-  font-size: 0.9rem;
-  color: ${props => props.positive ? '#4caf50' : '#f44336'};
-  display: flex;
-  align-items: center;
-  
-  &::before {
-    content: '${props => props.positive ? '▲' : '▼'}';
-    margin-right: 5px;
-  }
-`;
-
 const ChartContainer = styled.div`
-  background-color: ${props => props.theme.colors.cardBackground};
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: ${props => props.theme.shadows.small};
-  margin-bottom: 30px;
-  height: 300px;
-  position: relative;
-`;
-
-const ChartTitle = styled.h3`
-  color: ${props => props.theme.colors.text};
-  margin-bottom: 15px;
-`;
-
-const QuickActionsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 15px;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
   margin-bottom: 30px;
-`;
-
-const ActionCard = styled(Link)`
-  text-decoration: none;
-  background-color: ${props => props.theme.colors.cardBackground};
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: ${props => props.theme.shadows.small};
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  transition: transform 0.2s, box-shadow 0.2s;
-  height: 150px;
   
-  &:hover {
-    transform: translateY(-5px);
-    box-shadow: ${props => props.theme.shadows.medium};
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
   }
-`;
-
-const ActionIcon = styled.div`
-  font-size: 2.5rem;
-  margin-bottom: 10px;
-  color: ${props => props.theme.colors.primary};
-`;
-
-const ActionTitle = styled.div`
-  font-weight: bold;
-  color: ${props => props.theme.colors.text};
-  margin-bottom: 5px;
-`;
-
-const ActionDescription = styled.div`
-  font-size: 0.8rem;
-  color: ${props => props.theme.colors.textLight};
 `;
 
 const LoadingContainer = styled.div`
@@ -149,67 +62,118 @@ const ErrorMessage = styled.div`
   border-radius: 4px;
 `;
 
-// Componente para simular un gráfico (placeholder)
-const ChartPlaceholder = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 250px;
-  background-color: #f5f5f5;
+const RefreshButton = styled.button`
+  background-color: ${props => props.theme.colors.primary};
+  color: ${props => props.theme.colors.secondary};
+  border: none;
+  padding: 10px 16px;
   border-radius: 6px;
-  color: #888;
-  font-style: italic;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  
+  &:hover {
+    background-color: ${props => props.theme.colors.primaryHover};
+    transform: translateY(-2px);
+  }
+  
+  &:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+  }
 `;
 
 const TenantDashboard = () => {
-  const [stats, setStats] = useState({
-    totalProducts: 0,
-    totalSales: 0,
-    totalPurchases: 0,
-    lowStockProducts: 0,
-    recentSalesAmount: 0,
-    recentPurchasesAmount: 0
-  });
+  const [stats, setStats] = useState(null);
+  const [salesChartData, setSalesChartData] = useState([]);
+  const [purchasesChartData, setPurchasesChartData] = useState([]);
+  const [categoryData, setCategoryData] = useState([]);
+  const [lowStockProducts, setLowStockProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [chartsLoading, setChartsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [lastUpdate, setLastUpdate] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
   
   const { user } = useAuth();
   const { currentTenant } = useTenant();
-  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
   
+  // Función para cargar todos los datos del dashboard
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      
+      // Cargar estadísticas básicas
+      const statsData = await dashboardService.getStats();
+      setStats(statsData);
+      
+      // Cargar datos para gráficos en paralelo
+      setChartsLoading(true);
+      const [salesData, purchasesData, categoryStats, lowStockData] = await Promise.all([
+        dashboardService.getSalesChartData(),
+        dashboardService.getPurchasesChartData(),
+        dashboardService.getCategoryStats(),
+        dashboardService.getLowStockProducts()
+      ]);
+      
+      setSalesChartData(salesData);
+      setPurchasesChartData(purchasesData);
+      setCategoryData(categoryStats);
+      setLowStockProducts(lowStockData);
+      setChartsLoading(false);
+      
+      // Actualizar timestamp de la última actualización
+      setLastUpdate(new Date());
+    } catch (err) {
+      console.error('Error al cargar datos del dashboard:', err);
+      setError('Error al cargar datos del dashboard. Por favor, intenta de nuevo más tarde.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+  
+  // Cargar datos cuando se monta el componente
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        setLoading(true);
-        
-        // En un caso real, obtendríamos los datos del dashboard de la API
-        // Por ahora, simularemos los datos para la demostración
-        
-        // Simulando una solicitud a la API
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Datos simulados para el dashboard
-        setStats({
-          totalProducts: 45,
-          totalSales: 124,
-          totalPurchases: 56,
-          lowStockProducts: 8,
-          recentSalesAmount: 12500,
-          recentPurchasesAmount: 8900
-        });
-        
-        setLoading(false);
-      } catch (err) {
-        console.error('Error al cargar datos del dashboard:', err);
-        setError('No se pudieron cargar los datos del dashboard');
-        setLoading(false);
-      }
-    };
-    
-    fetchDashboardData();
-  }, [API_URL]);
+    loadDashboardData();
+  }, []);
   
-  if (loading) {
+  // Función para manejar la actualización manual de datos
+  const handleRefresh = () => {
+    setRefreshing(true);
+    loadDashboardData();
+  };
+  
+  // Formatear moneda
+  const formatCurrency = (value) => {
+    if (value === undefined || value === null) return 'Q 0.00';
+    
+    return new Intl.NumberFormat('es-ES', {
+      style: 'currency',
+      currency: 'GTQ',
+      minimumFractionDigits: 2
+    }).format(value);
+  };
+  
+  // Formatear fecha y hora
+  const formatDateTime = (date) => {
+    if (!date) return '';
+    
+    return new Date(date).toLocaleString('es-ES', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+  
+  if (loading && !stats) {
     return (
       <Container>
         <LoadingContainer>
@@ -228,118 +192,126 @@ const TenantDashboard = () => {
       
       {error && <ErrorMessage>{error}</ErrorMessage>}
       
+      <RefreshButton onClick={handleRefresh} disabled={refreshing}>
+        {refreshing ? 'Actualizando...' : '🔄 Actualizar Datos'}
+      </RefreshButton>
+      
+      {lastUpdate && (
+        <p style={{ fontSize: '0.8rem', color: '#666', marginBottom: '20px' }}>
+          Última actualización: {formatDateTime(lastUpdate)}
+        </p>
+      )}
+      
       {/* Tarjetas de estadísticas */}
       <DashboardGrid>
-        <StatCard color="#4caf50">
-          <StatTitle>Total de Productos</StatTitle>
-          <StatValue>{stats.totalProducts}</StatValue>
-          <StatTrend positive={true}>5% desde el mes pasado</StatTrend>
-        </StatCard>
+        <StatCard 
+          title="Total de Productos"
+          value={stats?.totalProducts || 0}
+          color="#4caf50"
+          icon="📦"
+          linkTo="/products"
+          linkText="Ver todos los productos"
+          loading={loading}
+        />
         
-        <StatCard color="#2196f3">
-          <StatTitle>Ventas Realizadas</StatTitle>
-          <StatValue>{stats.totalSales}</StatValue>
-          <StatTrend positive={true}>12% desde el mes pasado</StatTrend>
-        </StatCard>
+        <StatCard 
+          title="Ventas Realizadas"
+          value={stats?.totalSales || 0}
+          color="#2196f3"
+          icon="💰"
+          trend={true}
+          trendLabel="Últimos 30 días"
+          linkTo="/admin/transactions"
+          linkText="Ver historial de ventas"
+          loading={loading}
+        />
         
-        <StatCard color="#ff9800">
-          <StatTitle>Compras Realizadas</StatTitle>
-          <StatValue>{stats.totalPurchases}</StatValue>
-          <StatTrend positive={true}>3% desde el mes pasado</StatTrend>
-        </StatCard>
+        <StatCard 
+          title="Compras Realizadas"
+          value={stats?.totalPurchases || 0}
+          color="#ff9800"
+          icon="🛒"
+          trend={true}
+          trendLabel="Últimos 30 días"
+          linkTo="/admin/transactions"
+          linkText="Ver historial de compras"
+          loading={loading}
+        />
         
-        <StatCard color="#f44336">
-          <StatTitle>Productos con Stock Bajo</StatTitle>
-          <StatValue>{stats.lowStockProducts}</StatValue>
-          <StatTrend positive={false}>2 más que el mes pasado</StatTrend>
-        </StatCard>
+        <StatCard 
+          title="Productos con Stock Bajo"
+          value={stats?.lowStockProducts || 0}
+          color="#f44336"
+          icon="⚠️"
+          trend={false}
+          trendLabel="Requieren atención"
+          loading={loading}
+        />
       </DashboardGrid>
       
+      {/* Resumen Financiero */}
+      <FinancialSummary 
+        data={stats} 
+        loading={loading}
+        formatCurrency={formatCurrency}
+      />
+      
       {/* Gráficos */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '30px' }}>
-        <ChartContainer>
-          <ChartTitle>Ventas de los Últimos 30 Días</ChartTitle>
-          <ChartPlaceholder>
-            Gráfico de Ventas (Demo)
-          </ChartPlaceholder>
-        </ChartContainer>
+      <ChartContainer>
+        <DashboardChart 
+          title="Ventas de los Últimos 30 Días"
+          data={salesChartData}
+          type="line"
+          loading={chartsLoading}
+          lineColor="#2196f3"
+        />
         
-        <ChartContainer>
-          <ChartTitle>Compras de los Últimos 30 Días</ChartTitle>
-          <ChartPlaceholder>
-            Gráfico de Compras (Demo)
-          </ChartPlaceholder>
-        </ChartContainer>
-      </div>
+        <DashboardChart 
+          title="Compras de los Últimos 30 Días"
+          data={purchasesChartData}
+          type="line"
+          loading={chartsLoading}
+          lineColor="#ff9800"
+        />
+      </ChartContainer>
       
       {/* Acciones Rápidas */}
-      <h2 style={{ marginBottom: '20px' }}>Acciones Rápidas</h2>
-      <QuickActionsGrid>
-        <ActionCard to="/admin/users/new">
-          <ActionIcon>👤</ActionIcon>
-          <ActionTitle>Nuevo Usuario</ActionTitle>
-          <ActionDescription>Agregar un nuevo usuario al sistema</ActionDescription>
-        </ActionCard>
+      <QuickActions />
+      
+      {/* Gráficos adicionales */}
+      <ChartContainer>
+        <DashboardChart 
+          title="Distribución por Categoría"
+          data={categoryData}
+          type="pie"
+          pieDataNameKey="name"
+          pieDataValueKey="value"
+          loading={chartsLoading}
+        />
         
-        <ActionCard to="/products">
-          <ActionIcon>📦</ActionIcon>
-          <ActionTitle>Productos</ActionTitle>
-          <ActionDescription>Gestionar inventario de productos</ActionDescription>
-        </ActionCard>
-        
-        <ActionCard to="/admin/transactions">
-          <ActionIcon>💰</ActionIcon>
-          <ActionTitle>Ventas</ActionTitle>
-          <ActionDescription>Registrar ventas y ver historial</ActionDescription>
-        </ActionCard>
-        
-        <ActionCard to="/admin/transactions">
-          <ActionIcon>🛒</ActionIcon>
-          <ActionTitle>Compras</ActionTitle>
-          <ActionDescription>Registrar compras de productos</ActionDescription>
-        </ActionCard>
-        
-        <ActionCard to="/tenant/settings">
-          <ActionIcon>⚙️</ActionIcon>
-          <ActionTitle>Configuración</ActionTitle>
-          <ActionDescription>Ajustes del sistema</ActionDescription>
-        </ActionCard>
-      </QuickActionsGrid>
+        <DashboardChart 
+          title="Comparativa Ventas vs Compras"
+          data={[
+            ...salesChartData.slice(-7).map(item => ({
+              ...item,
+              tipo: 'Ventas'
+            })),
+            ...purchasesChartData.slice(-7).map(item => ({
+              ...item,
+              tipo: 'Compras'
+            }))
+          ]}
+          type="bar"
+          loading={chartsLoading}
+        />
+      </ChartContainer>
       
       {/* Productos con stock bajo */}
-      <ChartContainer>
-        <ChartTitle>Productos con Stock Bajo</ChartTitle>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr>
-              <th style={{ textAlign: 'left', padding: '10px', borderBottom: '1px solid #eee' }}>Producto</th>
-              <th style={{ textAlign: 'left', padding: '10px', borderBottom: '1px solid #eee' }}>Categoría</th>
-              <th style={{ textAlign: 'right', padding: '10px', borderBottom: '1px solid #eee' }}>Stock Actual</th>
-              <th style={{ textAlign: 'right', padding: '10px', borderBottom: '1px solid #eee' }}>Precio</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>Producto A</td>
-              <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>Categoría 1</td>
-              <td style={{ padding: '10px', borderBottom: '1px solid #eee', textAlign: 'right', color: '#f44336' }}>2</td>
-              <td style={{ padding: '10px', borderBottom: '1px solid #eee', textAlign: 'right' }}>Q 150.00</td>
-            </tr>
-            <tr>
-              <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>Producto B</td>
-              <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>Categoría 2</td>
-              <td style={{ padding: '10px', borderBottom: '1px solid #eee', textAlign: 'right', color: '#f44336' }}>3</td>
-              <td style={{ padding: '10px', borderBottom: '1px solid #eee', textAlign: 'right' }}>Q 85.50</td>
-            </tr>
-            <tr>
-              <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>Producto C</td>
-              <td style={{ padding: '10px', borderBottom: '1px solid #eee' }}>Categoría 1</td>
-              <td style={{ padding: '10px', borderBottom: '1px solid #eee', textAlign: 'right', color: '#f44336' }}>1</td>
-              <td style={{ padding: '10px', borderBottom: '1px solid #eee', textAlign: 'right' }}>Q 210.00</td>
-            </tr>
-          </tbody>
-        </table>
-      </ChartContainer>
+      <LowStockTable 
+        products={lowStockProducts} 
+        loading={loading}
+        formatCurrency={formatCurrency}
+      />
     </Container>
   );
 };
