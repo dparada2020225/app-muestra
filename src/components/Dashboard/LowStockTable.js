@@ -78,13 +78,6 @@ const NoDataMessage = styled.div`
   font-style: italic;
 `;
 
-const LoadingRow = styled.tr`
-  td {
-    padding: 15px;
-    text-align: center;
-    color: ${props => props.theme.colors.textLight};
-  }
-`;
 
 const LoadingCell = styled.td`
   height: 20px;

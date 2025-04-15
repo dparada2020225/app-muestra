@@ -45,24 +45,6 @@ const ItemValue = styled.div`
   color: ${props => props.color || props.theme.colors.text};
 `;
 
-const ComparisonRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  padding: 15px;
-  margin-bottom: 15px;
-`;
-
-const ComparisonLabel = styled.div`
-  color: ${props => props.theme.colors.text};
-  font-weight: 500;
-`;
-
-const ComparisonValue = styled.div`
-  font-weight: bold;
-  color: ${props => props.positive ? '#4caf50' : '#f44336'};
-`;
 
 const LoadingPlaceholder = styled.div`
   height: 24px;

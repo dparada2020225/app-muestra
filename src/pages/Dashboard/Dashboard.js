@@ -1,5 +1,5 @@
 // src/pages/Dashboard/Dashboard.js
-import React, { useState, useEffect } from 'react';
+import React, { useState} from 'react';
 import styled, { keyframes } from 'styled-components';
 import { ProductProvider, useProducts } from '../../context/ProductContext';
 import ProductCard from '../../components/ProductCard/ProductCard';
@@ -7,7 +7,6 @@ import Modal from '../../components/Modal/Modal';
 import ProductForm from '../../components/ProductForm/ProductForm';
 import ConfirmDialog from '../../components/ConfirmDialog/ConfirmDialog';
 import { useAuth } from '../../context/AuthContext';
-import { Link } from 'react-router-dom';
 import productService from '../../services/api';
 import ColorSelector from '../../components/ColorSelector/ColorSelector';
 
@@ -90,23 +89,6 @@ const ActionsContainer = styled.div`
   margin-bottom: 20px;
 `;
 
-const AdminMessage = styled.div`
-  background-color: #f8f8f8;
-  border-left: 3px solid ${props => props.theme.colors.primary};
-  padding: 15px;
-  margin-bottom: 20px;
-  border-radius: 4px;
-  
-  a {
-    color: ${props => props.theme.colors.primary};
-    font-weight: bold;
-    text-decoration: none;
-    
-    &:hover {
-      text-decoration: underline;
-    }
-  }
-`;
 
 const StyledButton = styled.button`
   background-color: ${props => 

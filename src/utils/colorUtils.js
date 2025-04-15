@@ -38,7 +38,6 @@ export const getColorCode = (colorName) => {
     'rojo vino': '#722f37',
     'rojo borgoña': '#800020',
     'rojo escarlata': '#ff2400',
-    'rojo bermellón': '#e34234',
     'rojo óxido': '#a55d35',
     'rojo bordo': '#800020',
 
@@ -53,7 +52,6 @@ export const getColorCode = (colorName) => {
     'azul medianoche': '#191970',
     'azul índigo': '#4b0082',
     'azul cobalto': '#0047ab',
-    'azul cian': '#00ffff',
     'azul eléctrico': '#7df9ff',
     'azul petróleo': '#086375',
     'azul turquí': '#00008b',
@@ -138,7 +136,6 @@ export const getColorCode = (colorName) => {
     'morado uva': '#6f2da8',
     'morado malva': '#b57edc',
     'morado amatista': '#9966cc',
-    'púrpura': '#800080',
     'púrpura real': '#7851a9',
     'violeta': '#8a2be2',
     'lila': '#c8a2c8',
@@ -208,7 +205,6 @@ export const getColorCode = (colorName) => {
     'ocre': '#cc7722',
     'magenta': '#ff00ff',
     'púrpura': '#800080',
-    'cian': '#00ffff',
     'esmeralda': '#50c878',
     'chocolate': '#7b3f00',
     'miel': '#f0e68c',
@@ -252,7 +248,6 @@ export const getColorCode = (colorName) => {
     'malva': '#b57edc',
     'cerúleo': '#2a52be',
     'borgoña': '#800020',
-    'bermellón': '#e34234',
     'amatista': '#9966cc',
     
     // Colores neutros
@@ -342,7 +337,6 @@ export const getColorName = (colorName) => {
     'morado lavanda': 'lavender',
     'morado lila': 'lilac',
     'morado violeta': 'blueviolet',
-    'púrpura': 'purple',
     'violeta': 'violet',
     'lila': 'lilac',
     
@@ -366,7 +360,6 @@ export const getColorName = (colorName) => {
     'crema': 'cream',
     'beige': 'beige',
     'magenta': 'magenta',
-    'cian': 'cyan',
     'aguamarina': 'aquamarine',
     'lavanda': 'lavender',
     'coral': 'coral',

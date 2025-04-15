@@ -54,11 +54,6 @@ const UserMenu = styled.div`
   align-items: center;
 `;
 
-const Username = styled.span`
-  color: ${props => props.theme.colors.primary};
-  font-weight: bold;
-  margin-right: 10px;
-`;
 
 const Dropdown = styled.div`
   position: relative;

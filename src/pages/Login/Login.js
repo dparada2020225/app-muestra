@@ -107,14 +107,6 @@ const LogoImage = styled.img`
   height: auto;
 `;
 
-// Mantenemos el componente por si se necesita en el futuro
-const LogoText = styled.span`
-  font-size: 1.8rem;
-  font-weight: bold;
-  margin-left: 10px;
-  color: ${props => props.theme.colors.secondary};
-  display: none; // Ocultar el texto
-`;
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -123,7 +115,7 @@ const Login = () => {
   });
   const [formError, setFormError] = useState('');
   
-  const { login, error, isAuthenticated, loading } = useAuth();
+  const { login, error, loading } = useAuth();
   const navigate = useNavigate();
   
   useEffect(() => {

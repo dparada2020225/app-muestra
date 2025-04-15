@@ -1,5 +1,4 @@
 // src/components/Dashboard/DashboardChart.js
-import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { 
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, 

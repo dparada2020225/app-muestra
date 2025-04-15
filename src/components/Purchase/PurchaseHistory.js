@@ -10,10 +10,6 @@ const Container = styled.div`
   gap: 20px;
 `;
 
-const Title = styled.h2`
-  color: ${props => props.theme.colors.text};
-  margin-bottom: 20px;
-`;
 
 const Table = styled.table`
   width: 100%;
@@ -203,8 +199,7 @@ const PurchaseHistory = () => {
     purchases, 
     purchasesLoading, 
     purchasesError, 
-    fetchPurchases,
-    refreshAll
+    fetchPurchases
   } = useTransactions();
   
   // Al montar el componente, forzar una carga de datos

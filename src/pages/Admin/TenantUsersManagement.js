@@ -1,6 +1,6 @@
 // src/pages/Admin/TenantUsersManagement.js
-import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
@@ -261,29 +261,25 @@ const TenantUsersManagement = () => {
   
   const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
   
-  // Cargar datos del tenant y sus usuarios
-  useEffect(() => {
-    loadTenantData();
-  }, [tenantId]);
   
-  const loadTenantData = async () => {
+  
+  const loadTenantData = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
-      
+  
       const token = localStorage.getItem('token');
       const config = {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       };
-      
-      // Obtener tenant y sus usuarios en paralelo
+  
       const [tenantResponse, usersResponse] = await Promise.all([
         axios.get(`${API_URL}/api/admin/tenants/${tenantId}`, config),
         axios.get(`${API_URL}/api/admin/tenant/${tenantId}/users`, config)
       ]);
-      
+  
       setTenant(tenantResponse.data);
       setUsers(usersResponse.data);
     } catch (err) {
@@ -292,7 +288,12 @@ const TenantUsersManagement = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_URL, tenantId]); // ✅ Dependencias necesarias
+
+  // Cargar datos del tenant y sus usuarios
+  useEffect(() => {
+    loadTenantData();
+  }, [loadTenantData]); // ✅ Solo depende de la función
   
   const handleChange = (e) => {
     const { name, value } = e.target;

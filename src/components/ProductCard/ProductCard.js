@@ -5,14 +5,6 @@ import { getColorCode } from '../../utils/colorUtils';
 import ImageViewer from '../ImageViewer/ImageViewer';
 import { useTenant } from '../../context/TenantContext';
 
-const getColorFromString = (str) => {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = str.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const color = Math.abs(hash).toString(16).substring(0, 6);
-  return `#${'0'.repeat(6 - color.length)}${color}`;
-};
 
 const Card = styled.div`
   background-color: ${props => props.theme.colors.cardBackground};
@@ -154,7 +146,6 @@ const ColorDot = styled.span`
   vertical-align: middle;
 `;
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 
 const ProductCard = ({ product, onEdit, onDelete, onAddToSale, isAdmin }) => {

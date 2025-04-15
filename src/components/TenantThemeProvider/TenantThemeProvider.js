@@ -100,7 +100,7 @@ const GlobalStyle = createGlobalStyle`
 `;
 
 const TenantThemeProvider = ({ children }) => {
-  const { currentTenant, loading } = useTenant();
+  const { currentTenant} = useTenant();
   
   // Función para convertir color hex a RGB para usar en rgba()
   const hexToRgb = (hex) => {

@@ -10,10 +10,6 @@ const Container = styled.div`
   gap: 20px;
 `;
 
-const Title = styled.h2`
-  color: ${props => props.theme.colors.text};
-  margin-bottom: 20px;
-`;
 
 const Table = styled.table`
   width: 100%;

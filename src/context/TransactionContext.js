@@ -23,7 +23,7 @@ export const TransactionProvider = ({ children }) => {
   const [dataInitialized, setDataInitialized] = useState(false);
 
   // Obtener información de autenticación y tenant
-  const { user, isAuthenticated, token } = useAuth();
+  const { isAuthenticated, token } = useAuth();
   const { currentTenant } = useTenant();
   
   const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
