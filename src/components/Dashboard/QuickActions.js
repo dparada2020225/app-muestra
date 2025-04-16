@@ -79,18 +79,11 @@ const QuickActions = ({ actions = [] }) => {
       color: '#4caf50'
     },
     {
-      title: 'Ventas',
-      description: 'Registrar ventas y ver historial',
-      icon: '💰',
+      title: 'Ventas y Compras',
+      description: 'Registrar ventas/compras y ver historial',
+      icon: '💰/🛒',
       to: '/admin/transactions',
       color: '#ff9800'
-    },
-    {
-      title: 'Compras',
-      description: 'Registrar compras de productos',
-      icon: '🛒',
-      to: '/admin/transactions',
-      color: '#f44336'
     },
     {
       title: 'Configuración',

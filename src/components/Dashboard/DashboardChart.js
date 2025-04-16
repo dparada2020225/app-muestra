@@ -137,7 +137,10 @@ const DashboardChart = ({
                 tickFormatter={formatDate}
                 minTickGap={15}
               />
-              <YAxis tickFormatter={formatCurrency} />
+              <YAxis tickFormatter={(value) => new Intl.NumberFormat('es-ES', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+              }).format(value)} />
               <Tooltip 
                 formatter={(value) => [formatCurrency(value), 'Monto']}
                 labelFormatter={formatDate}
@@ -155,38 +158,51 @@ const DashboardChart = ({
           </ResponsiveContainer>
         );
         
-      case 'bar':
-        return (
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={data}
-              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-              <XAxis 
-                dataKey={xAxisKey} 
-                tickFormatter={formatDate}
-                minTickGap={15}
-              />
-              <YAxis tickFormatter={formatCurrency} />
-              <Tooltip 
-                formatter={(value) => [formatCurrency(value), 'Monto']}
-                labelFormatter={formatDate}
-              />
-              {showLegend && <Legend />}
-              <Bar 
-                dataKey={dataKey} 
-                fill="#4caf50" 
-                radius={[4, 4, 0, 0]}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        );
+        case 'bar':
+          // Agrupar datos por fecha
+          const groupedData = data.reduce((acc, item) => {
+            const existing = acc.find(d => d[xAxisKey] === item[xAxisKey]);
+            if (existing) {
+              existing[item.tipo] = item[dataKey];
+            } else {
+              acc.push({
+                [xAxisKey]: item[xAxisKey],
+                [item.tipo]: item[dataKey],
+              });
+            }
+            return acc;
+          }, []);
         
+          return (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={groupedData}
+                margin={{ top: 5, right: 30, left: 20, bottom: 15 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                <XAxis 
+                  dataKey={xAxisKey} 
+                  tickFormatter={formatDate}
+                  minTickGap={15}
+                />
+                <YAxis tickFormatter={(value) => new Intl.NumberFormat('es-ES', {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
+                  }).format(value)} />
+                <Tooltip 
+                  formatter={(value, name) => [formatCurrency(value), name]}
+                  labelFormatter={formatDate}
+                />
+                {showLegend && <Legend />}
+                <Bar dataKey="Ventas" fill="#4caf50" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Compras" fill="#2196f3" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          );  
       case 'pie':
         return (
           <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
+            <PieChart margin={{ top: 10, bottom: 15 }}>
               <Pie
                 data={data}
                 cx="50%"
@@ -197,6 +213,7 @@ const DashboardChart = ({
                 fill="#8884d8"
                 dataKey={pieDataValueKey}
                 nameKey={pieDataNameKey}
+                margin={{ top: 5, right: 30, left: 20, bottom: 15 }}
               >
                 {data.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
