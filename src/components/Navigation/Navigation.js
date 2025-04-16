@@ -53,17 +53,19 @@ const Navigation = () => {
       )}
       
       {/* Enlaces visibles para todos los usuarios autenticados */}
-      <StyledNavLink to="/products">Productos</StyledNavLink>
-      
+      {!isSuperAdmin  && (
+        <StyledNavLink to="/products">Productos</StyledNavLink>
+      )}
+
       {/* Enlaces para tenantManager y superiores */}
-      {(isTenantManager || isTenantAdmin || isSuperAdmin) && (
+      {(isTenantManager || isTenantAdmin ) && (
         <>
           <StyledNavLink to="/admin/transactions">Compras/Ventas</StyledNavLink>
         </>
       )}
       
       {/* Enlaces para tenantAdmin y superAdmin */}
-      {(isTenantAdmin || isSuperAdmin) && (
+      {(isTenantAdmin) && (
         <>
           <StyledNavLink to="/admin/users">Usuarios</StyledNavLink>
         </>
@@ -75,7 +77,7 @@ const Navigation = () => {
       )}
       
       {/* Panel de superAdmin solo visible para superAdmin */}
-      {isSuperAdmin && currentTenant && (
+      {isSuperAdmin  && (
         <StyledNavLink to="/admin/tenant-dashboard">Panel SuperAdmin</StyledNavLink>
       )}
     </Nav>

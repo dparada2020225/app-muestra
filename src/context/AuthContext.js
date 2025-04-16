@@ -31,6 +31,10 @@ export const AuthProvider = ({ children }) => {
   const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
   // Configurar el token en los headers por defecto
+  // useEffect(() => {}, [token]);
+
+
+  // Verificar token al cargar el componente o cuando cambia el tenant
   useEffect(() => {
     if (token) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -39,10 +43,7 @@ export const AuthProvider = ({ children }) => {
       delete axios.defaults.headers.common['Authorization'];
       localStorage.removeItem('token');
     }
-  }, [token]);
-
-  // Verificar token al cargar el componente o cuando cambia el tenant
-  useEffect(() => {
+  
     const verifyToken = async () => {
       if (!token) {
         setUser(null);
