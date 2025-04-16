@@ -154,16 +154,25 @@ const handleSuperAdminLogin = async () => {
     console.log("Respuesta del servidor:", response.status);
     
     if (response.data && response.data.token) {
-      // Guardar el token en localStorage
+      // // Guardar el token en localStorage
+      // localStorage.setItem('token', response.data.token);
+      
+      // // Establecer el token en los headers por defecto
+      // axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
+      
+      // console.log("Login superadmin exitoso, redirigiendo...");
+      
+      // // Redirigir a la página de superadmin
+      // navigate('/super-admin-welcome', { replace: true });
+      // return true;
+
       localStorage.setItem('token', response.data.token);
-      
-      // Establecer el token en los headers por defecto
       axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
-      
+
       console.log("Login superadmin exitoso, redirigiendo...");
-      
-      // Redirigir a la página de superadmin
-      navigate('/super-admin-welcome', { replace: true });
+
+      // 🔁 Forzar recarga para que AuthContext detecte el token y verifique al usuario
+      window.location.href = "/super-admin-welcome";
       return true;
     } else {
       setFormError('Respuesta inválida del servidor');

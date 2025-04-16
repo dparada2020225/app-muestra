@@ -70,7 +70,31 @@ const Button = styled(Link)`
 const SuperAdminWelcome = () => {
   const { user, logout } = useAuth();
   console.log("user", user)
-  if (!user || user.role !== 'superAdmin') {
+  // if (!user || user.role !== 'superAdmin') {
+  //   return (
+  //     <Container>
+  //       <Title>Acceso Denegado</Title>
+  //       <Message>
+  //         Esta página es solo para superadministradores. Por favor, inicia sesión con una cuenta de superadmin.
+  //       </Message>
+  //       <ButtonContainer>
+  //         <Button to="/login">Iniciar Sesión</Button>
+  //       </ButtonContainer>
+  //     </Container>
+  //   );
+  // }
+
+  if (!user) {
+    // Mostrar loader mientras se verifica el usuario
+    return (
+      <Container>
+        <Title>Cargando...</Title>
+        <Message>Verificando sesión, por favor espera un momento.</Message>
+      </Container>
+    );
+  }
+  
+  if (user.role !== 'superAdmin') {
     return (
       <Container>
         <Title>Acceso Denegado</Title>
