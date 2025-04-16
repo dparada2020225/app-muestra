@@ -1,4 +1,4 @@
-// src/App.js
+// src/App.js (Modificado)
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Dashboard from './pages/Dashboard/Dashboard';
@@ -23,6 +23,10 @@ import TenantForm from './pages/Admin/TenantForm';
 import TenantUsersManagement from './pages/Admin/TenantUsersManagement';
 import ImpersonateUser from './pages/Admin/ImpersonateUser';
 import ImpersonationBanner from './components/ImpersonationBanner/ImpersonationBanner';
+
+// Nuevas páginas
+import SuperAdminWelcome from './pages/SuperAdminWelcome/SuperAdminWelcome';
+import Profile from './pages/Profile/Profile';
 
 // Importar páginas de error de tenant
 import TenantError from './pages/TenantError/TenantError';
@@ -63,6 +67,10 @@ function App() {
                 <Route path="/public" element={<PublicTenantPage />} />
                 <Route path="/login" element={<Login />} />
                 
+                {/* Nuevas rutas para superadmin sin subdominio */}
+                <Route path="/super-admin-welcome" element={<SuperAdminWelcome />} />
+                <Route path="/profile" element={<Profile />} />
+                
                 {/* Rutas de error de tenant */}
                 <Route path="/tenant-error" element={<TenantError />} />
                 <Route path="/tenant-suspended" element={<TenantSuspended />} />
@@ -102,7 +110,6 @@ function App() {
                 
                 {/* Rutas específicas para superAdmin */}
                 <Route element={<ProtectedRoute requireSuperAdmin={true} />}>
-                  <Route path="/admin/tenant-dashboard" element={<div>Panel de SuperAdmin</div>} />
                   <Route path="/admin/tenant-dashboard" element={<SuperAdminDashboard />} />
                   <Route path="/admin/tenants/new" element={<TenantForm />} />
                   <Route path="/admin/tenants/:id" element={<TenantForm />} />

@@ -1,4 +1,4 @@
-// src/components/ProtectedRoute/ProtectedRoute.js - corregido
+// src/components/ProtectedRoute/ProtectedRoute.js - versión mejorada
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -19,12 +19,6 @@ const ProtectedRoute = ({
     return <div style={{ padding: '40px', textAlign: 'center' }}>Cargando...</div>;
   }
   
-  // Si se requiere un tenant y no hay uno actual
-  if (requireTenant && !currentTenant) {
-    console.log("Se requiere tenant pero no hay uno configurado");
-    return <Navigate to="/login" />;
-  }
-  
   // Verificar si el usuario está autenticado
   if (!isAuthenticated) {
     console.log("Usuario no autenticado, redirigiendo a login");
@@ -35,6 +29,12 @@ const ProtectedRoute = ({
   if (requireSuperAdmin && user?.role !== 'superAdmin') {
     console.log("Se requiere superAdmin pero el usuario no lo es:", user?.role);
     return <Navigate to="/products" />;
+  }
+  
+  // Verificar requisito de tenant (excepto para superAdmin, que puede acceder sin tenant)
+  if (requireTenant && !currentTenant && user?.role !== 'superAdmin') {
+    console.log("Se requiere tenant pero no hay uno configurado y el usuario no es superAdmin");
+    return <Navigate to="/login" />;
   }
   
   // Si requireAdmin es true, verificar roles de administración

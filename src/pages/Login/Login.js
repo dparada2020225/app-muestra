@@ -103,10 +103,9 @@ const Logo = styled.div`
 `;
 
 const LogoImage = styled.img`
-  max-width: 100px; // Aumentado de 80px a 100px
+  max-width: 100px;
   height: auto;
 `;
-
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -119,29 +118,29 @@ const Login = () => {
   const navigate = useNavigate();
   
   useEffect(() => {
-console.log("URL de la API:", process.env.REACT_APP_API_URL);
+    console.log("URL de la API:", process.env.REACT_APP_API_URL);
 
-const testAPIConnection = async () => {
-  try {
-    const testUrl = `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/test`;
-    console.log("Intentando conectar a:", testUrl);
-    const response = await axios.get(testUrl);
-    console.log("Respuesta del servidor:", response.data);
-  } catch (error) {
-    console.error("Error conectando con la API:", error);
-    if (error.response) {
-      console.error("Datos de error:", error.response.data);
-      console.error("Estado:", error.response.status);
-    } else if (error.request) {
-      console.error("No se recibió respuesta del servidor");
-    } else {
-      console.error("Error de configuración:", error.message);
-    }
-  }
-};
+    const testAPIConnection = async () => {
+      try {
+        const testUrl = `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/test`;
+        console.log("Intentando conectar a:", testUrl);
+        const response = await axios.get(testUrl);
+        console.log("Respuesta del servidor:", response.data);
+      } catch (error) {
+        console.error("Error conectando con la API:", error);
+        if (error.response) {
+          console.error("Datos de error:", error.response.data);
+          console.error("Estado:", error.response.status);
+        } else if (error.request) {
+          console.error("No se recibió respuesta del servidor");
+        } else {
+          console.error("Error de configuración:", error.message);
+        }
+      }
+    };
 
-testAPIConnection();
-}, []);
+    testAPIConnection();
+  }, []);
   
   const handleChange = (e) => {
     setFormData({
@@ -165,7 +164,29 @@ testAPIConnection();
       
       if (success) {
         console.log("Login exitoso, redirigiendo...");
-        // Usar replace: true para evitar volver al login con el botón de atrás
+        
+        // Si es superadmin, redirigirlo a la página de superadmin
+        if (localStorage.getItem('token')) {
+          const token = localStorage.getItem('token');
+          try {
+            // Decodificar el token para ver el rol
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const decodedToken = JSON.parse(window.atob(base64));
+            
+            console.log("Token decodificado:", decodedToken);
+            
+            if (decodedToken.role === 'superAdmin') {
+              // Redirigir a la página de superadmin
+              navigate('/super-admin-welcome', { replace: true });
+              return;
+            }
+          } catch (error) {
+            console.error("Error decodificando el token:", error);
+          }
+        }
+        
+        // Si no es superadmin o hay error, redirigir a la página normal
         navigate('/products', { replace: true });
       } else {
         console.log("Login falló");
