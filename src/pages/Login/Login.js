@@ -1,4 +1,4 @@
-// src/pages/Login/Login.js
+// src/pages/Login/Login.js - con soporte mejorado para superadmin
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
@@ -125,64 +125,65 @@ const Login = () => {
     });
   };
   
-  // Función específica para el login de superadmin
-  const handleSuperAdminLogin = async () => {
-    try {
-      setIsLoading(true);
+// En el método handleSuperAdminLogin de Login.js
+const handleSuperAdminLogin = async () => {
+  try {
+    setIsLoading(true);
+    
+    // URL exacta del endpoint
+    const loginUrl = process.env.REACT_APP_API_URL + '/api/auth/login' || 'http://localhost:5000/api/auth/login';
+    
+    console.log("Intentando login de superadmin directamente con:", {
+      username: formData.username
+    });
+    
+    // Crear una instancia de axios independiente sin interceptores
+    const axiosInstance = axios.create();
+    
+    // Eliminar cualquier configuración previa
+    delete axiosInstance.defaults.headers.common['Authorization'];
+    delete axiosInstance.defaults.headers.common['X-Tenant-ID'];
+    
+    // Petición directa con un tenant por defecto para superar la validación
+    const response = await axiosInstance.post(loginUrl, {
+      username: formData.username,
+      password: formData.password,
+      tenantId: "demo" // Añadir un tenant por defecto solo para superar la validación
+    });
+    
+    console.log("Respuesta del servidor:", response.status);
+    
+    if (response.data && response.data.token) {
+      // Guardar el token en localStorage
+      localStorage.setItem('token', response.data.token);
       
-      // URL exacta del endpoint
-      const loginUrl = 'http://localhost:5000/api/auth/login';
+      // Establecer el token en los headers por defecto
+      axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
       
-      console.log("Intentando login de superadmin directamente con:", {
-        username: formData.username
-      });
+      console.log("Login superadmin exitoso, redirigiendo...");
       
-      // Crear una instancia de axios independiente sin interceptores
-      const axiosInstance = axios.create();
-      
-      // Eliminar cualquier configuración previa
-      delete axiosInstance.defaults.headers.common['Authorization'];
-      delete axiosInstance.defaults.headers.common['X-Tenant-ID'];
-      
-      // Petición directa sin middleware de tenant
-      const response = await axiosInstance.post(loginUrl, {
-        username: formData.username,
-        password: formData.password
-      });
-      
-      console.log("Respuesta del servidor:", response.status);
-      
-      if (response.data && response.data.token) {
-        // Guardar el token en localStorage
-        localStorage.setItem('token', response.data.token);
-        
-        // Establecer el token en los headers por defecto
-        axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
-        
-        console.log("Login superadmin exitoso, redirigiendo...");
-        
-        // Redirigir a la página de superadmin
-        navigate('/super-admin-welcome', { replace: true });
-        return true;
-      } else {
-        setFormError('Respuesta inválida del servidor');
-        return false;
-      }
-    } catch (error) {
-      console.error("Error en login de superadmin:", error);
-      if (error.response) {
-        console.error("Respuesta de error:", error.response.status, error.response.data);
-        setFormError(error.response.data.message || error.response.data.error || `Error ${error.response.status}: Credenciales inválidas`);
-      } else if (error.request) {
-        setFormError('No se recibió respuesta del servidor');
-      } else {
-        setFormError(`Error: ${error.message}`);
-      }
+      // Redirigir a la página de superadmin
+      navigate('/super-admin-welcome', { replace: true });
+      return true;
+    } else {
+      setFormError('Respuesta inválida del servidor');
       return false;
-    } finally {
-      setIsLoading(false);
     }
-  };
+  } catch (error) {
+    console.error("Error en login de superadmin:", error);
+    if (error.response) {
+      console.error("Respuesta de error:", error.response.status, error.response.data);
+      setFormError(error.response.data.message || error.response.data.error || `Error ${error.response.status}: Credenciales inválidas`);
+    } else if (error.request) {
+      setFormError('No se recibió respuesta del servidor');
+    } else {
+      setFormError(`Error: ${error.message}`);
+    }
+    return false;
+  } finally {
+    setIsLoading(false);
+  }
+};
   
   const handleSubmit = async (e) => {
     e.preventDefault();

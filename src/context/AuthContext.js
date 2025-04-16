@@ -98,16 +98,24 @@ export const AuthProvider = ({ children }) => {
 const login = async (username, password) => {
   try {
     setLoading(true);
+    setError('');
     console.log("Iniciando sesión con:", { username });
     
     // Verificar si es un intento de login como superadmin
     const isSuperAdminLogin = username === 'superadmin';
     
-    // Obtener el subdominio actual solo si no es superadmin
-    let loginData = { username, password };
-    let tenantId = null;
+    // URL para login
+    const url = `${API_URL}/api/auth/login`;
     
+    // Preparar datos para login
+    let loginData = { username, password };
+    
+    // Configuración para la petición
+    const config = {};
+    
+    // Si NO es superadmin, buscar tenantId
     if (!isSuperAdminLogin) {
+      // Obtener el subdominio actual
       const host = window.location.host;
       console.log("Host actual:", host);
       
@@ -115,26 +123,22 @@ const login = async (username, password) => {
       if (host.includes('.') && !host.startsWith('www.')) {
         const subdomain = host.split('.')[0];
         if (subdomain !== 'localhost' && subdomain !== 'www') {
-          console.log(`Detectado subdomain: ${subdomain}`);
-          // Guardar el subdominio para usarlo como tenantId
-          tenantId = subdomain;
-          loginData.tenantId = tenantId;
+          console.log(`Detectado subdominio: ${subdomain}`);
+          loginData.tenantId = subdomain;
+          
+          // También añadir en los headers para mayor compatibilidad
+          config.headers = {
+            'X-Tenant-ID': subdomain
+          };
         }
       }
     }
     
-    // Construir la URL para login
-    const url = `${API_URL}/api/auth/login`;
     console.log("Datos de login:", loginData);
+    console.log("Configuración:", config);
     
-    // Headers adicionales para la petición
-    const headers = {};
-    if (tenantId) {
-      headers['X-Tenant-ID'] = tenantId;
-    }
-    
-    // Realizar la petición con los headers apropiados
-    const response = await axios.post(url, loginData, { headers });
+    // Realizar la petición con los datos y configuración apropiados
+    const response = await axios.post(url, loginData, config);
     console.log("Respuesta de login:", response.data);
     
     if (response.data.token) {
@@ -147,6 +151,11 @@ const login = async (username, password) => {
       
       // Configurar el token en los encabezados de Axios
       axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
+      
+      // Si es superadmin, redirigir al dashboard correspondiente
+      if (isSuperAdminLogin) {
+        navigate('/super-admin-welcome');
+      }
       
       return true;
     } else {
