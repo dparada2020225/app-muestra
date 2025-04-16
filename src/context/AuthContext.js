@@ -94,44 +94,52 @@ export const AuthProvider = ({ children }) => {
     verifyToken();
   }, [token, API_URL, currentTenant, getTenantApiUrl]);
 
-// Modifica la función login a esta versión
-  const login = async (username, password) => {
-    try {
-      setLoading(true);
-      console.log("Iniciando sesión con:", { username });
-      
-      // Obtener el subdominio actual
+// Función login actualizada con manejo especial para superadmin
+const login = async (username, password) => {
+  try {
+    setLoading(true);
+    console.log("Iniciando sesión con:", { username });
+    
+    // Verificar si es un intento de login como superadmin
+    const isSuperAdminLogin = username === 'superadmin';
+    
+    // Obtener el subdominio actual solo si no es superadmin
+    let loginData = { username, password };
+    let tenantId = null;
+    
+    if (!isSuperAdminLogin) {
       const host = window.location.host;
       console.log("Host actual:", host);
-      
-      // Construir la URL para login
-      const url = `${API_URL}/api/auth/login`;
-      
-      // Datos básicos de login
-      const loginData = { 
-        username, 
-        password
-      };
       
       // Si estamos en un subdominio, extraerlo y agregarlo a la solicitud
       if (host.includes('.') && !host.startsWith('www.')) {
         const subdomain = host.split('.')[0];
         if (subdomain !== 'localhost' && subdomain !== 'www') {
           console.log(`Detectado subdomain: ${subdomain}`);
-          // Añadir header específico de tenant
-          loginData.tenantId = subdomain;
+          // Guardar el subdominio para usarlo como tenantId
+          tenantId = subdomain;
+          loginData.tenantId = tenantId;
         }
       }
-      
-      console.log("Datos de login:", loginData);
-      
-        const response = await axios.post(url, loginData);
-      
-        console.log("Respuesta de login:", response.data);
-      
-      if (response.data.token) {
-        setToken(response.data.token);
-        setUser(response.data.user);
+    }
+    
+    // Construir la URL para login
+    const url = `${API_URL}/api/auth/login`;
+    console.log("Datos de login:", loginData);
+    
+    // Headers adicionales para la petición
+    const headers = {};
+    if (tenantId) {
+      headers['X-Tenant-ID'] = tenantId;
+    }
+    
+    // Realizar la petición con los headers apropiados
+    const response = await axios.post(url, loginData, { headers });
+    console.log("Respuesta de login:", response.data);
+    
+    if (response.data.token) {
+      setToken(response.data.token);
+      setUser(response.data.user);
       setError(null);
       
       // Almacenar en localStorage
@@ -141,23 +149,23 @@ export const AuthProvider = ({ children }) => {
       axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
       
       return true;
-      } else {
-        setError('Respuesta inválida del servidor');
-        return false;
-      }
-    } catch (error) {
-      console.error('Error en login:', error);
-      if (error.response) {
-        console.error('Respuesta del servidor:', error.response.data);
-        setError(error.response.data.message || error.response.data.error || 'Error al iniciar sesión');
-      } else {
-        setError('Error de conexión al servidor');
-      }
+    } else {
+      setError('Respuesta inválida del servidor');
       return false;
-    } finally {
-      setLoading(false);
     }
-  };
+  } catch (error) {
+    console.error('Error en login:', error);
+    if (error.response) {
+      console.error('Respuesta del servidor:', error.response.data);
+      setError(error.response.data.message || error.response.data.error || 'Error al iniciar sesión');
+    } else {
+      setError('Error de conexión al servidor');
+    }
+    return false;
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Registrar usuario - actualizado para incluir tenantId
   const register = async (userData) => {

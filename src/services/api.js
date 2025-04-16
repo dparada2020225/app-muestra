@@ -61,15 +61,39 @@ const getCurrentTenant = () => {
 };
 
 // Interceptor para añadir el tenant a todas las solicitudes
+// Interceptor para añadir el tenant a todas las solicitudes
 axios.interceptors.request.use(
   config => {
+    // Verificar si es una petición de login para superadmin
+    if (config.url && config.url.includes('/api/auth/login') && 
+        config.data && config.data.username === 'superadmin') {
+      console.log("Detectada petición de login para superadmin, no aplicando interceptor");
+      return config; // No modificar la configuración
+    }
+    
     // Añadir token de autorización si existe
     const token = localStorage.getItem('token');
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
+      
+      // Verificar si es un token de superadmin
+      try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const decodedToken = JSON.parse(window.atob(base64));
+        
+        // Si es superadmin, no necesitamos añadir el tenant ID
+        if (decodedToken.role === 'superAdmin') {
+          console.log("Petición de superAdmin detectada, no se añade tenant ID");
+          return config; // Devolver config sin modificar para superAdmin
+        }
+      } catch (error) {
+        console.error("Error al decodificar token:", error);
+        // Continuar con el proceso normal si hay error al decodificar
+      }
     }
     
-    // Añadir tenant ID a los headers
+    // Para usuarios normales, añadir tenant ID a los headers
     const tenantId = getCurrentTenant(); // Usar la función mejorada
     if (tenantId) {
       config.headers['X-Tenant-ID'] = tenantId;
@@ -344,14 +368,35 @@ export const authService = {
   // Iniciar sesión
   login: async (credentials) => {
     try {
-      console.log('Iniciando sesión...');
+      console.log('Iniciando sesión...', credentials.username);
+      
+      // Verificar si es superadmin
+      const isSuperAdmin = credentials.username === 'superadmin';
+      
+      // Preparar configuración para la petición
+      let config = {};
+      
+      // Si no es superadmin y hay un tenant, añadirlo a los headers
+      if (!isSuperAdmin) {
+        const tenantId = getCurrentTenant();
+        if (tenantId) {
+          config.headers = {
+            'X-Tenant-ID': tenantId
+          };
+          // También añadir al body para mayor compatibilidad
+          credentials.tenantId = tenantId;
+        }
+      }
+      
       // Usar la ruta directa, no la ruta del tenant
-      const response = await axios.post(`${API_URL}/api/auth/login`, credentials);
+      const response = await axios.post(`${API_URL}/api/auth/login`, credentials, config);
+      
       if (response.data.token) {
         localStorage.setItem('token', response.data.token);
         axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
+        console.log('Sesión iniciada con éxito');
       }
-      console.log('Sesión iniciada con éxito');
+      
       return response.data;
     } catch (error) {
       console.error('Error logging in:', error);

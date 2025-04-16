@@ -113,40 +113,75 @@ const Login = () => {
     password: ''
   });
   const [formError, setFormError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   
   const { login, error, loading } = useAuth();
   const navigate = useNavigate();
-  
-  useEffect(() => {
-    console.log("URL de la API:", process.env.REACT_APP_API_URL);
-
-    const testAPIConnection = async () => {
-      try {
-        const testUrl = `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/test`;
-        console.log("Intentando conectar a:", testUrl);
-        const response = await axios.get(testUrl);
-        console.log("Respuesta del servidor:", response.data);
-      } catch (error) {
-        console.error("Error conectando con la API:", error);
-        if (error.response) {
-          console.error("Datos de error:", error.response.data);
-          console.error("Estado:", error.response.status);
-        } else if (error.request) {
-          console.error("No se recibió respuesta del servidor");
-        } else {
-          console.error("Error de configuración:", error.message);
-        }
-      }
-    };
-
-    testAPIConnection();
-  }, []);
   
   const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     });
+  };
+  
+  // Función específica para el login de superadmin
+  const handleSuperAdminLogin = async () => {
+    try {
+      setIsLoading(true);
+      
+      // URL exacta del endpoint
+      const loginUrl = 'http://localhost:5000/api/auth/login';
+      
+      console.log("Intentando login de superadmin directamente con:", {
+        username: formData.username
+      });
+      
+      // Crear una instancia de axios independiente sin interceptores
+      const axiosInstance = axios.create();
+      
+      // Eliminar cualquier configuración previa
+      delete axiosInstance.defaults.headers.common['Authorization'];
+      delete axiosInstance.defaults.headers.common['X-Tenant-ID'];
+      
+      // Petición directa sin middleware de tenant
+      const response = await axiosInstance.post(loginUrl, {
+        username: formData.username,
+        password: formData.password
+      });
+      
+      console.log("Respuesta del servidor:", response.status);
+      
+      if (response.data && response.data.token) {
+        // Guardar el token en localStorage
+        localStorage.setItem('token', response.data.token);
+        
+        // Establecer el token en los headers por defecto
+        axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
+        
+        console.log("Login superadmin exitoso, redirigiendo...");
+        
+        // Redirigir a la página de superadmin
+        navigate('/super-admin-welcome', { replace: true });
+        return true;
+      } else {
+        setFormError('Respuesta inválida del servidor');
+        return false;
+      }
+    } catch (error) {
+      console.error("Error en login de superadmin:", error);
+      if (error.response) {
+        console.error("Respuesta de error:", error.response.status, error.response.data);
+        setFormError(error.response.data.message || error.response.data.error || `Error ${error.response.status}: Credenciales inválidas`);
+      } else if (error.request) {
+        setFormError('No se recibió respuesta del servidor');
+      } else {
+        setFormError(`Error: ${error.message}`);
+      }
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   const handleSubmit = async (e) => {
@@ -158,35 +193,20 @@ const Login = () => {
       return;
     }
     
+    // Si es superadmin, usar la función específica
+    if (formData.username === 'superadmin') {
+      console.log("Detectado intento de login como superadmin, usando método directo");
+      await handleSuperAdminLogin();
+      return;
+    }
+    
+    // Para otros usuarios, usar el método normal
     try {
-      console.log("Intentando login con:", {username: formData.username});
+      console.log("Intentando login con usuario normal:", {username: formData.username});
       const success = await login(formData.username, formData.password);
       
       if (success) {
         console.log("Login exitoso, redirigiendo...");
-        
-        // Si es superadmin, redirigirlo a la página de superadmin
-        if (localStorage.getItem('token')) {
-          const token = localStorage.getItem('token');
-          try {
-            // Decodificar el token para ver el rol
-            const base64Url = token.split('.')[1];
-            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            const decodedToken = JSON.parse(window.atob(base64));
-            
-            console.log("Token decodificado:", decodedToken);
-            
-            if (decodedToken.role === 'superAdmin') {
-              // Redirigir a la página de superadmin
-              navigate('/super-admin-welcome', { replace: true });
-              return;
-            }
-          } catch (error) {
-            console.error("Error decodificando el token:", error);
-          }
-        }
-        
-        // Si no es superadmin o hay error, redirigir a la página normal
         navigate('/products', { replace: true });
       } else {
         console.log("Login falló");
@@ -195,10 +215,6 @@ const Login = () => {
       console.error("Error en login:", error);
     }
   };
-  
-  if (loading) {
-    return <Container><div>Cargando...</div></Container>;
-  }
   
   return (
     <Container>
@@ -236,8 +252,8 @@ const Login = () => {
           />
         </FormGroup>
         
-        <Button type="submit" disabled={loading}>
-          {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+        <Button type="submit" disabled={loading || isLoading}>
+          {loading || isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
         </Button>
       </Form>
     </Container>

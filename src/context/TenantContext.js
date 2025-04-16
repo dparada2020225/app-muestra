@@ -56,6 +56,26 @@ export const TenantProvider = ({ children }) => {
 
   // Función para detectar el tenant basado en el subdominio
   const detectTenant = useCallback(() => {
+    // Verificar primero si es un token de superadmin
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const decodedToken = JSON.parse(window.atob(base64));
+        
+        // Si es superadmin y no hay tenant específico, permitir acceso sin tenant
+        if (decodedToken.role === 'superAdmin' && 
+            (window.location.hostname === 'localhost' || 
+             !window.location.hostname.includes('.'))) {
+          console.log("Superadmin en dominio principal, no se requiere tenant");
+          return null; // No aplicar tenant para superadmin en dominio principal
+        }
+      } catch (e) {
+        console.error('Error al decodificar token:', e);
+      }
+    }
+    
     const hostname = window.location.hostname;
     
     // Para desarrollo local (localhost u otras URLs locales)
