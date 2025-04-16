@@ -70,7 +70,7 @@ const Button = styled(Link)`
 const SuperAdminWelcome = () => {
   const { user, logout } = useAuth();
   
-  if (!user || user.role !== 'superAdmin') {
+  if (!user || user.role === 'superAdmin') {
     return (
       <Container>
         <Title>Acceso Denegado</Title>
