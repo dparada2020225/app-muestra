@@ -332,7 +332,8 @@ const TenantSettings = () => {
         settings: {
           enableInventoryAlerts: formData.enableInventoryAlerts,
           lowStockThreshold: parseInt(formData.lowStockThreshold),
-          defaultDateRange: parseInt(formData.defaultDateRange)
+          defaultDateRange: parseInt(formData.defaultDateRange),
+          features: []
         }
       };
       
@@ -449,6 +450,7 @@ const TenantSettings = () => {
                 name="slogan"
                 value={formData.slogan}
                 onChange={handleChange}
+                required 
               />
             </FormGroup>
             
@@ -460,6 +462,7 @@ const TenantSettings = () => {
                 value={formData.description}
                 onChange={handleChange}
                 rows="4"
+                required 
               />
             </FormGroup>
           </Card>
@@ -504,6 +507,7 @@ const TenantSettings = () => {
                     target: { name: 'primaryColor', value: e.target.value }
                   })}
                   placeholder="#3b82f6"
+                  required 
                 />
               </Row>
             </FormGroup>
@@ -518,6 +522,7 @@ const TenantSettings = () => {
                   name="secondaryColor"
                   value={formData.secondaryColor}
                   onChange={handleChange}
+                  required 
                 />
                 <Input
                   type="text"
@@ -526,6 +531,7 @@ const TenantSettings = () => {
                     target: { name: 'secondaryColor', value: e.target.value }
                   })}
                   placeholder="#333333"
+                  required 
                 />
               </Row>
             </FormGroup>
@@ -540,6 +546,7 @@ const TenantSettings = () => {
                 onChange={handleChange}
                 maxLength="3"
                 style={{ width: '100px' }}
+                required 
               />
             </FormGroup>
             
@@ -556,6 +563,7 @@ const TenantSettings = () => {
                   border: '1px solid #ddd',
                   width: '200px'
                 }}
+                required 
               >
                 <option value="DD/MM/YYYY">DD/MM/YYYY</option>
                 <option value="MM/DD/YYYY">MM/DD/YYYY</option>
@@ -591,6 +599,7 @@ const TenantSettings = () => {
                 name="phone"
                 value={formData.phone}
                 onChange={handleChange}
+                required 
               />
             </FormGroup>
             
@@ -602,6 +611,7 @@ const TenantSettings = () => {
                 value={formData.address}
                 onChange={handleChange}
                 rows="3"
+                required 
               />
             </FormGroup>
             
@@ -613,6 +623,7 @@ const TenantSettings = () => {
                 name="taxId"
                 value={formData.taxId}
                 onChange={handleChange}
+                required 
               />
             </FormGroup>
           </Card>

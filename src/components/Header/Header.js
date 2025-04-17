@@ -188,8 +188,11 @@ const Header = () => {
           <LogoContainer>
             {currentTenant && currentTenant.logo ? (
               <LogoImage 
-                src={currentTenant.logo} 
-                alt={`${currentTenant.name} Logo`} 
+                // src={currentTenant.logo} 
+                // alt={`${currentTenant.name} Logo`} 
+
+                src="/logoMuestraInvertida.png" 
+                alt="Inventory System" 
               />
             ) : (
               <LogoImage 
