@@ -417,8 +417,10 @@ export const isDarkColor = (hexColor) => {
   return luminance < 0.5;
 };
 
-export default {
+const colorUtils = {
   getColorCode,
   getColorName,
   isDarkColor
 };
+
+export default colorUtils;

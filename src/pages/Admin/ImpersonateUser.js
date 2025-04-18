@@ -1,5 +1,5 @@
 // src/pages/Admin/ImpersonateUser.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import axios from 'axios';
@@ -216,10 +216,6 @@ const ImpersonateUser = () => {
   
   const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
   
-  // Cargar datos del tenant y sus usuarios
-  useEffect(() => {
-    loadTenantData();
-  }, [tenantId]);
   
   // Filtrar usuarios cuando cambia el término de búsqueda
   useEffect(() => {
@@ -236,7 +232,7 @@ const ImpersonateUser = () => {
     }
   }, [searchTerm, users]);
   
-  const loadTenantData = async () => {
+  const loadTenantData = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
@@ -263,7 +259,12 @@ const ImpersonateUser = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_URL, tenantId]);
+  
+  // Cargar datos del tenant y sus usuarios
+  useEffect(() => {
+    loadTenantData();
+  }, [loadTenantData]);
   
   const handleImpersonate = async () => {
     if (!selectedUser) {

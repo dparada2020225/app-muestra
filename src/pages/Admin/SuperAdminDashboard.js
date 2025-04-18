@@ -1,5 +1,5 @@
 // src/pages/Admin/SuperAdminDashboard.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import axios from 'axios';
@@ -217,12 +217,9 @@ const SuperAdminDashboard = () => {
   const { user } = useAuth();
   const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
   
-  // Cargar estadísticas y tenants
-  useEffect(() => {
-    loadDashboardData();
-  }, []);
+ 
   
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
@@ -264,7 +261,12 @@ const SuperAdminDashboard = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [API_URL]);
+
+   // Cargar estadísticas y tenants
+  useEffect(() => {
+    loadDashboardData();
+  }, [loadDashboardData]);
   
   const handleRefresh = () => {
     setRefreshing(true);
