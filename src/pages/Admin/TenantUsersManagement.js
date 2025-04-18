@@ -249,7 +249,6 @@ const TenantUsersManagement = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [confirmAction, setConfirmAction] = useState(null);
   
   // Estado para el formulario de edición/creación de usuario
   const [formData, setFormData] = useState({

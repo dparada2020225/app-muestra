@@ -1,5 +1,5 @@
 // src/pages/Admin/TenantForm.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback  } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import axios from 'axios';
@@ -197,14 +197,7 @@ const TenantForm = () => {
   
   const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
   
-  // Cargar los datos del tenant si estamos en modo edición
-  useEffect(() => {
-    if (isEditing) {
-      loadTenantData();
-    }
-  }, [isEditing, id]);
-  
-  const loadTenantData = async () => {
+  const loadTenantData = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -252,7 +245,15 @@ const TenantForm = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, API_URL]);
+  
+  // Cargar los datos del tenant si estamos en modo edición
+  useEffect(() => {
+    if (isEditing) {
+      loadTenantData();
+    }
+  }, [isEditing, loadTenantData]);
+  
   
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
