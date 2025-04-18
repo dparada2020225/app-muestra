@@ -183,7 +183,7 @@ const ProductCard = ({ product, onEdit, onDelete, onAddToSale, isAdmin }) => {
   const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
   
   // Modificar para asegurar que tenantId no es undefined
-  const tenantIdParam = currentTenant?.subdomain || 'demo';
+  const tenantIdParam = currentTenant?.subdomain;
   
   const fullImageUrl = product.image 
     ? `${API_URL}/images/${product.image}?tenantId=${tenantIdParam}`

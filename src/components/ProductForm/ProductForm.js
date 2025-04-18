@@ -321,7 +321,7 @@ const handleSubmit = async (e) => {
       formDataFile.append('image', selectedFile);
       
       // Usar el tenant del contexto que ya tenemos disponible
-      const tenantSubdomain = currentTenant?.subdomain || 'demo';
+      const tenantSubdomain = currentTenant?.subdomain;
       
       // Añadir explícitamente el tenant ID al FormData
       formDataFile.append('tenantId', tenantSubdomain);
@@ -387,7 +387,7 @@ const handleSubmit = async (e) => {
       lastPurchasePrice: parseFloat(formData.lastPurchasePrice) || 0,
       image: imageId,
       // Incluir explícitamente el tenantId
-      tenantId: currentTenant?.subdomain || 'demo'
+      tenantId: currentTenant?.subdomain
     };
     
     console.log('Enviando datos del producto:', productData);
