@@ -1,5 +1,5 @@
 // src/components/TenantThemeProvider/TenantThemeProvider.js - versión mejorada
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { ThemeProvider, createGlobalStyle } from 'styled-components';
 import { useTenant } from '../../context/TenantContext';
 import { theme } from '../../theme';
@@ -120,7 +120,7 @@ const TenantThemeProvider = ({ children }) => {
   };
   
   // Función para ajustar el brillo de un color (para hover states)
-  const adjustBrightness = (hex, percent) => {
+  const adjustBrightness = useCallback((hex, percent) => {
     const { r, g, b } = hexToRgb(hex);
     
     const amount = Math.floor(2.55 * percent);
@@ -130,7 +130,7 @@ const TenantThemeProvider = ({ children }) => {
     const newB = Math.max(0, Math.min(255, b + amount));
     
     return `#${(newR.toString(16).padStart(2, '0'))}${(newG.toString(16).padStart(2, '0'))}${(newB.toString(16).padStart(2, '0'))}`;
-  };
+  }, []);
   
   // Aplicar estilos específicos del tenant cuando se carga
   useEffect(() => {
@@ -178,7 +178,7 @@ const TenantThemeProvider = ({ children }) => {
       
       console.log(`Tema personalizado aplicado para tenant: ${currentTenant.name}`);
     }
-  }, [currentTenant]);
+  }, [currentTenant, adjustBrightness]);
 
   // Crear un tema modificado con colores del tenant
   const tenantTheme = {

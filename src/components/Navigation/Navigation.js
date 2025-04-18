@@ -32,7 +32,7 @@ const StyledNavLink = styled(NavLink)`
 // src/components/Navigation/Navigation.js - Actualización
 const Navigation = () => {
   const { user, isAuthenticated } = useAuth();
-  const { currentTenant, loading: tenantLoading } = useTenant();
+  const { loading: tenantLoading } = useTenant();
   
   // Si está cargando o no hay autenticación, no mostrar navegación
   if (tenantLoading || !isAuthenticated) {
