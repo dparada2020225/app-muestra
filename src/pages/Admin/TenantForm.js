@@ -211,14 +211,18 @@ const TenantForm = () => {
       const token = localStorage.getItem('token');
       const config = {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       };
       
+      // Usar el endpoint correcto para obtener detalles del tenant
       const response = await axios.get(`${API_URL}/api/admin/tenants/${id}`, config);
+      console.log("Datos del tenant cargados:", response.data);
+      
       const tenant = response.data;
       
-      // Preparar datos para el formulario
+      // Preparar datos para el formulario asegurando que todas las propiedades necesarias existan
       setFormData({
         name: tenant.name || '',
         subdomain: tenant.subdomain || '',
@@ -268,11 +272,12 @@ const TenantForm = () => {
       const token = localStorage.getItem('token');
       const config = {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       };
       
-      // Estructurar los datos para la API
+      // Estructurar los datos para la API, asegurando que todos los campos requeridos estén presentes
       const tenantData = {
         name: formData.name,
         subdomain: formData.subdomain,
@@ -292,7 +297,8 @@ const TenantForm = () => {
         settings: {
           maxUsers: parseInt(formData.maxUsers),
           maxProducts: parseInt(formData.maxProducts),
-          maxStorage: parseInt(formData.maxStorage)
+          maxStorage: parseInt(formData.maxStorage),
+          features: []
         },
         billing: {
           planStartDate: formData.planStartDate,
@@ -301,9 +307,11 @@ const TenantForm = () => {
         }
       };
       
-      // Si está editando, realizar PUT, de lo contrario, POST
+      console.log("Enviando datos para actualizar tenant:", tenantData);
+      
       let response;
       if (isEditing) {
+        // Usar el endpoint correcto para actualizar el tenant
         response = await axios.put(`${API_URL}/api/admin/tenants/${id}`, tenantData, config);
         setSuccess('Tenant actualizado exitosamente');
       } else {
@@ -311,10 +319,7 @@ const TenantForm = () => {
         setSuccess('Tenant creado exitosamente');
       }
       
-      // Si es creación, mostrar información del administrador
-      if (!isEditing && response.data.adminUser) {
-        setSuccess(`Tenant creado exitosamente. Usuario admin: ${response.data.adminUser.username} / Contraseña: ${response.data.adminUser.password}`);
-      }
+      console.log("Respuesta del servidor:", response.data);
       
       // Después de un tiempo, redirigir al panel de administración
       setTimeout(() => {
@@ -323,10 +328,13 @@ const TenantForm = () => {
     } catch (err) {
       console.error('Error al guardar tenant:', err);
       
-      if (err.response && err.response.data && err.response.data.message) {
-        setError(err.response.data.message);
+      if (err.response) {
+        console.error('Detalles del error:', err.response);
+        setError(`Error ${err.response.status}: ${err.response.data?.message || 'Error al guardar los datos'}`);
+      } else if (err.request) {
+        setError('No se recibió respuesta del servidor. Verifica tu conexión.');
       } else {
-        setError('Error al guardar los datos. Por favor, intenta nuevamente.');
+        setError(`Error: ${err.message}`);
       }
     } finally {
       setLoading(false);
