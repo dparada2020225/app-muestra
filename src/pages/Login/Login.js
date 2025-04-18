@@ -1,5 +1,5 @@
 // src/pages/Login/Login.js - con soporte mejorado para superadmin
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
