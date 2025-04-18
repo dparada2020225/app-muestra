@@ -1,10 +1,10 @@
 // src/pages/Admin/TenantUsersManagement.js
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import Modal from '../../components/Modal/Modal';
+import { useParams, useNavigate } from 'react-router-dom';
 
 const Container = styled.div`
   max-width: 1200px;
@@ -238,6 +238,7 @@ const Row = styled.div`
 `;
 const TenantUsersManagement = () => {
   const { tenantId } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
   
   const [tenant, setTenant] = useState(null);
@@ -246,9 +247,11 @@ const TenantUsersManagement = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [impersonateToken, setImpersonateToken] = useState(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [confirmAction, setConfirmAction] = useState(null);
   
-  // Estado para el formulario de creación de usuario
+  // Estado para el formulario de edición/creación de usuario
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -256,12 +259,11 @@ const TenantUsersManagement = () => {
     email: '',
     firstName: '',
     lastName: '',
-    role: 'tenantUser'
+    role: 'tenantUser',
+    isActive: true
   });
   
   const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-  
-  
   
   const loadTenantData = useCallback(async () => {
     try {
@@ -271,107 +273,125 @@ const TenantUsersManagement = () => {
       const token = localStorage.getItem('token');
       const config = {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       };
   
-      const [tenantResponse, usersResponse] = await Promise.all([
-        axios.get(`${API_URL}/api/admin/tenants/${tenantId}`, config),
-        axios.get(`${API_URL}/api/admin/tenant/${tenantId}/users`, config)
-      ]);
-  
+      // Obtener información del tenant
+      const tenantResponse = await axios.get(`${API_URL}/api/admin/tenants/${tenantId}`, config);
       setTenant(tenantResponse.data);
+      
+      // Obtener usuarios del tenant
+      const usersResponse = await axios.get(`${API_URL}/api/admin/tenant/${tenantId}/users`, config);
       setUsers(usersResponse.data);
+      
+      console.log("Información del tenant cargada:", tenantResponse.data);
+      console.log("Usuarios cargados:", usersResponse.data);
     } catch (err) {
       console.error('Error al cargar datos:', err);
       setError('Error al cargar los datos. Por favor, intenta nuevamente.');
     } finally {
       setLoading(false);
     }
-  }, [API_URL, tenantId]); // ✅ Dependencias necesarias
+  }, [API_URL, tenantId]);
 
-  // Cargar datos del tenant y sus usuarios
+  // Cargar datos al montar el componente
   useEffect(() => {
     loadTenantData();
-  }, [loadTenantData]); // ✅ Solo depende de la función
+  }, [loadTenantData]);
   
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: type === 'checkbox' ? checked : value
     }));
   };
   
-  const handleCreateUser = async (e) => {
-    e.preventDefault();
-    
-    // Validaciones
-    if (formData.password !== formData.confirmPassword) {
-      setError('Las contraseñas no coinciden');
-      return;
-    }
-    
-    if (formData.password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres');
-      return;
-    }
-    
+  const resetForm = () => {
+    setFormData({
+      username: '',
+      password: '',
+      confirmPassword: '',
+      email: '',
+      firstName: '',
+      lastName: '',
+      role: 'tenantUser',
+      isActive: true
+    });
+  };
+  
+  // Manejar clic en editar usuario
+  const handleEditClick = (userData) => {
+    setSelectedUser(userData);
+    setFormData({
+      username: userData.username || '',
+      email: userData.email || '',
+      firstName: userData.firstName || '',
+      lastName: userData.lastName || '',
+      role: userData.role || 'tenantUser',
+      isActive: userData.isActive !== false, // Por defecto true si no está definido
+      // No incluimos password y confirmPassword porque no los editaremos
+      password: '',
+      confirmPassword: ''
+    });
+    setIsEditModalOpen(true);
+  };
+  
+  // Manejar desactivación/activación de usuario
+// Manejar desactivación/activación de usuario
+  const handleToggleUserStatus = async (userId, currentStatus) => {
     try {
       setLoading(true);
-      setError('');
       
       const token = localStorage.getItem('token');
       const config = {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       };
       
-      // Preparar datos del usuario
-      const userData = {
-        username: formData.username,
-        password: formData.password,
-        email: formData.email,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        role: formData.role,
-        tenantId: tenantId // Asociar al tenant actual
-      };
+      // Cambiar el estado del usuario usando la ruta correcta según tu controlador
+      const response = await axios.put(
+        `${API_URL}/api/users/${userId}/status`, 
+        { isActive: !currentStatus },
+        config
+      );
       
-      // Enviar petición para crear usuario
-      await axios.post(`${API_URL}/api/auth/register`, userData, config);
+      console.log("Respuesta al cambiar estado:", response.data);
       
-      // Limpiar formulario y cerrar modal
-      setFormData({
-        username: '',
-        password: '',
-        confirmPassword: '',
-        email: '',
-        firstName: '',
-        lastName: '',
-        role: 'tenantUser'
-      });
+      // Actualizar la lista de usuarios
+      setUsers(users.map(u => {
+        if (u._id === userId) {
+          return { ...u, isActive: !currentStatus };
+        }
+        return u;
+      }));
       
-      setSuccess('Usuario creado exitosamente');
-      setIsCreateModalOpen(false);
+      setSuccess(`Usuario ${currentStatus ? 'desactivado' : 'activado'} correctamente`);
       
-      // Recargar lista de usuarios
-      loadTenantData();
+      // Limpiar el mensaje después de 3 segundos
+      setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
-      console.error('Error al crear usuario:', err);
-      
-      if (err.response && err.response.data && err.response.data.message) {
-        setError(err.response.data.message);
-      } else {
-        setError('Error al crear usuario. Por favor, intenta nuevamente.');
-      }
+      console.error('Error al cambiar estado del usuario:', err);
+      setError('Error al cambiar el estado del usuario. Por favor, intenta nuevamente.');
     } finally {
       setLoading(false);
     }
   };
   
-  const handleImpersonate = async (userId) => {
+  // Guardar cambios del usuario editado
+  const handleSaveUser = async (e) => {
+    e.preventDefault();
+    
+    // Validaciones
+    if (!formData.username || !formData.email) {
+      setError('Por favor completa los campos obligatorios');
+      return;
+    }
+    
     try {
       setLoading(true);
       setError('');
@@ -379,22 +399,65 @@ const TenantUsersManagement = () => {
       const token = localStorage.getItem('token');
       const config = {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       };
       
-      // Solicitar token de impersonación
-      const response = await axios.post(`${API_URL}/api/admin/impersonate/${userId}`, {}, config);
+      // Eliminar campos que no son necesarios para la actualización
+      const { confirmPassword, ...dataToSend } = formData;
       
-      if (response.data && response.data.token) {
-        setImpersonateToken(response.data.token);
-        setSuccess('Impersonación exitosa. Copie el token y utilícelo para acceder como este usuario.');
-      } else {
-        setError('No se pudo obtener token de impersonación');
+      // Si no se proporciona contraseña, eliminarla del objeto
+      if (!dataToSend.password) {
+        delete dataToSend.password;
       }
+      
+      let response;
+      
+      if (selectedUser) {
+        // Actualizar usuario existente - Usar la URL correcta
+        console.log(`Actualizando usuario ${selectedUser._id}:`, dataToSend);
+        
+        // Usar la ruta correcta según el controlador que has proporcionado
+        response = await axios.put(
+          `${API_URL}/api/users/${selectedUser._id}`,
+          dataToSend,
+          config
+        );
+      } else {
+        // Crear nuevo usuario (agregar tenantId)
+        dataToSend.tenantId = tenantId;
+        console.log("Creando nuevo usuario:", dataToSend);
+        response = await axios.post(
+          `${API_URL}/api/auth/register`,
+          dataToSend,
+          config
+        );
+      }
+      
+      console.log("Respuesta del servidor:", response.data);
+      
+      // Actualizar la lista de usuarios
+      await loadTenantData();
+      
+      // Resetear formulario y cerrar modales
+      resetForm();
+      setIsCreateModalOpen(false);
+      setIsEditModalOpen(false);
+      setSelectedUser(null);
+      
+      setSuccess(selectedUser ? 'Usuario actualizado correctamente' : 'Usuario creado correctamente');
+      
+      // Limpiar el mensaje después de 3 segundos
+      setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
-      console.error('Error al impersonar usuario:', err);
-      setError('Error al impersonar usuario. Por favor, intenta nuevamente.');
+      console.error('Error al guardar usuario:', err);
+      
+      if (err.response && err.response.data) {
+        setError(err.response.data.message || 'Error al guardar usuario');
+      } else {
+        setError('Error al procesar la solicitud');
+      }
     } finally {
       setLoading(false);
     }
@@ -417,19 +480,15 @@ const TenantUsersManagement = () => {
     );
   }
   
-  if (!tenant) {
-    return (
-      <Container>
-        <ErrorMessage>No se encontró el tenant especificado.</ErrorMessage>
-      </Container>
-    );
-  }
-  
   return (
     <Container>
       <Header>
         <Title>Gestión de Usuarios del Tenant</Title>
-        <Button $primary onClick={() => setIsCreateModalOpen(true)}>
+        <Button $primary onClick={() => {
+          resetForm();
+          setSelectedUser(null);
+          setIsCreateModalOpen(true);
+        }}>
           Crear Nuevo Usuario
         </Button>
       </Header>
@@ -438,38 +497,19 @@ const TenantUsersManagement = () => {
       {success && <SuccessMessage>{success}</SuccessMessage>}
       
       <TenantInfo>
-        <TenantLogo color={tenant.customization?.primaryColor}>
-          {tenant.name.charAt(0)}
+        <TenantLogo color={tenant?.customization?.primaryColor || '#333'}>
+          {tenant?.name?.charAt(0).toUpperCase() || 'E'}
         </TenantLogo>
         <TenantDetails>
-          <TenantName>{tenant.name}</TenantName>
-          <TenantSubdomain>{tenant.subdomain}.tuapp.com</TenantSubdomain>
+          <TenantName>{tenant?.name || 'Tenant'}</TenantName>
+          <TenantSubdomain>{tenant?.subdomain || 'demo'}.tuapp.com</TenantSubdomain>
         </TenantDetails>
-        <TenantStatus status={tenant.status}>
-          {tenant.status === 'active' ? 'Activo' : 
-           tenant.status === 'trial' ? 'Prueba' : 
-           tenant.status === 'suspended' ? 'Suspendido' : 'Cancelado'}
+        <TenantStatus status={tenant?.status || 'active'}>
+          {tenant?.status === 'active' ? 'Activo' : 
+           tenant?.status === 'trial' ? 'Prueba' : 
+           tenant?.status === 'suspended' ? 'Suspendido' : 'Cancelado'}
         </TenantStatus>
       </TenantInfo>
-      
-      {impersonateToken && (
-        <SuccessMessage>
-          <p><strong>Token de impersonación:</strong></p>
-          <pre style={{ overflow: 'auto', background: '#f5f5f5', padding: '10px', borderRadius: '4px' }}>
-            {impersonateToken}
-          </pre>
-          <p>
-            Para utilizar este token, cópielo y establézcalo como valor de 'token' en localStorage. 
-            Luego refresque la página. Este token expirará en 1 hora.
-          </p>
-          <Button onClick={() => {
-            navigator.clipboard.writeText(impersonateToken);
-            alert('Token copiado al portapapeles');
-          }}>
-            Copiar al portapapeles
-          </Button>
-        </SuccessMessage>
-      )}
       
       <Table>
         <thead>
@@ -495,14 +535,17 @@ const TenantUsersManagement = () => {
                 </Td>
                 <Td>{user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Nunca'}</Td>
                 <Td>
-                  <ActionButton impersonate onClick={() => handleImpersonate(user._id)}>
+                  <ActionButton impersonate onClick={() => navigate(`/admin/impersonate/${user._id}`)}>
                     Impersonar
                   </ActionButton>
-                  <ActionButton>
+                  <ActionButton onClick={() => handleEditClick(user)}>
                     Editar
                   </ActionButton>
-                  <ActionButton danger>
-                    {user.isActive ? 'Desactivar' : 'Activar'}
+                  <ActionButton 
+                    danger={user.isActive !== false} 
+                    onClick={() => handleToggleUserStatus(user._id, user.isActive !== false)}
+                  >
+                    {user.isActive !== false ? 'Desactivar' : 'Activar'}
                   </ActionButton>
                 </Td>
               </Tr>
@@ -521,7 +564,7 @@ const TenantUsersManagement = () => {
         title="Crear Nuevo Usuario"
         onClose={() => setIsCreateModalOpen(false)}
       >
-        <Form onSubmit={handleCreateUser}>
+        <Form onSubmit={handleSaveUser}>
           <FormGroup>
             <Label htmlFor="username">Nombre de Usuario *</Label>
             <Input
@@ -535,7 +578,7 @@ const TenantUsersManagement = () => {
             />
           </FormGroup>
           
-          <Row style={{ display: 'flex', gap: '15px' }}>
+          <Row>
             <FormGroup style={{ flex: 1 }}>
               <Label htmlFor="password">Contraseña *</Label>
               <Input
@@ -572,10 +615,11 @@ const TenantUsersManagement = () => {
               value={formData.email}
               onChange={handleChange}
               placeholder="Email"
+              required
             />
           </FormGroup>
           
-          <Row style={{ display: 'flex', gap: '15px' }}>
+          <Row>
             <FormGroup style={{ flex: 1 }}>
               <Label htmlFor="firstName">Nombre</Label>
               <Input
@@ -622,6 +666,133 @@ const TenantUsersManagement = () => {
             </Button>
             <Button $primary type="submit" disabled={loading}>
               {loading ? 'Creando...' : 'Crear Usuario'}
+            </Button>
+          </div>
+        </Form>
+      </Modal>
+      
+      {/* Modal para editar usuario */}
+      <Modal
+        isOpen={isEditModalOpen}
+        title="Editar Usuario"
+        onClose={() => setIsEditModalOpen(false)}
+      >
+        <Form onSubmit={handleSaveUser}>
+          <FormGroup>
+            <Label htmlFor="username">Nombre de Usuario *</Label>
+            <Input
+              type="text"
+              id="username"
+              name="username"
+              value={formData.username}
+              onChange={handleChange}
+              placeholder="Nombre de usuario"
+              required
+              disabled // No permitir cambiar el nombre de usuario
+            />
+          </FormGroup>
+          
+          <FormGroup>
+            <Label htmlFor="email">Email</Label>
+            <Input
+              type="email"
+              id="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              placeholder="Email"
+              required
+            />
+          </FormGroup>
+          
+          <Row>
+            <FormGroup style={{ flex: 1 }}>
+              <Label htmlFor="firstName">Nombre</Label>
+              <Input
+                type="text"
+                id="firstName"
+                name="firstName"
+                value={formData.firstName}
+                onChange={handleChange}
+                placeholder="Nombre"
+              />
+            </FormGroup>
+            
+            <FormGroup style={{ flex: 1 }}>
+              <Label htmlFor="lastName">Apellido</Label>
+              <Input
+                type="text"
+                id="lastName"
+                name="lastName"
+                value={formData.lastName}
+                onChange={handleChange}
+                placeholder="Apellido"
+              />
+            </FormGroup>
+          </Row>
+          
+          <FormGroup>
+            <Label htmlFor="role">Rol</Label>
+            <Select
+              id="role"
+              name="role"
+              value={formData.role}
+              onChange={handleChange}
+              required
+            >
+              <option value="tenantUser">Usuario</option>
+              <option value="tenantManager">Manager</option>
+              <option value="tenantAdmin">Administrador</option>
+            </Select>
+          </FormGroup>
+          
+          <FormGroup>
+            <Label htmlFor="isActive">Estado</Label>
+            <Select
+              id="isActive"
+              name="isActive"
+              value={formData.isActive.toString()}
+              onChange={(e) => setFormData({...formData, isActive: e.target.value === 'true'})}
+              required
+            >
+              <option value="true">Activo</option>
+              <option value="false">Inactivo</option>
+            </Select>
+          </FormGroup>
+          
+          <Row>
+            <FormGroup style={{ flex: 1 }}>
+              <Label htmlFor="password">Nueva Contraseña (opcional)</Label>
+              <Input
+                type="password"
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Dejar en blanco para mantener la actual"
+              />
+            </FormGroup>
+            
+            <FormGroup style={{ flex: 1 }}>
+              <Label htmlFor="confirmPassword">Confirmar Contraseña</Label>
+              <Input
+                type="password"
+                id="confirmPassword"
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                placeholder="Confirmar nueva contraseña"
+                disabled={!formData.password}
+              />
+            </FormGroup>
+          </Row>
+          
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+            <Button type="button" onClick={() => setIsEditModalOpen(false)}>
+              Cancelar
+            </Button>
+            <Button $primary type="submit" disabled={loading}>
+              {loading ? 'Guardando...' : 'Guardar Cambios'}
             </Button>
           </div>
         </Form>
