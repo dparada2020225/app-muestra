@@ -392,6 +392,12 @@ const TenantUsersManagement = () => {
       return;
     }
     
+    // Validar que las contraseñas coincidan si se proporciona una nueva
+    if (formData.password && formData.password !== formData.confirmPassword) {
+      setError('Las contraseñas no coinciden');
+      return;
+    }
+    
     try {
       setLoading(true);
       setError('');
@@ -404,26 +410,52 @@ const TenantUsersManagement = () => {
         }
       };
       
-      // Eliminar campos que no son necesarios para la actualización
-      const { confirmPassword, ...dataToSend } = formData;
+      // Crear una copia del formData para no modificar el estado directamente
+      const dataToSend = { ...formData };
       
-      // Si no se proporciona contraseña, eliminarla del objeto
-      if (!dataToSend.password) {
+      // Eliminar confirmPassword ya que no es un campo del modelo
+      delete dataToSend.confirmPassword;
+      
+      // Si la contraseña está vacía, eliminarla del objeto para evitar actualizarla
+      if (!dataToSend.password || dataToSend.password.trim() === '') {
         delete dataToSend.password;
       }
       
       let response;
       
       if (selectedUser) {
-        // Actualizar usuario existente - Usar la URL correcta
+        // Actualizar usuario existente
         console.log(`Actualizando usuario ${selectedUser._id}:`, dataToSend);
         
-        // Usar la ruta correcta según el controlador que has proporcionado
-        response = await axios.put(
-          `${API_URL}/api/users/${selectedUser._id}`,
-          dataToSend,
-          config
-        );
+        // Si la contraseña se va a cambiar, usar el endpoint específico de cambio de contraseña
+        if (dataToSend.password) {
+          // Primero actualizamos los datos generales sin la contraseña
+          const userDataWithoutPassword = { ...dataToSend };
+          delete userDataWithoutPassword.password;
+          
+          // Actualizar datos generales
+          await axios.put(
+            `${API_URL}/api/users/${selectedUser._id}`,
+            userDataWithoutPassword,
+            config
+          );
+          
+          // Luego actualizar la contraseña específicamente
+          response = await axios.put(
+            `${API_URL}/api/users/${selectedUser._id}/password`,
+            { newPassword: dataToSend.password },
+            config
+          );
+          
+          console.log("Contraseña actualizada:", response.data);
+        } else {
+          // Actualizar solo datos generales
+          response = await axios.put(
+            `${API_URL}/api/users/${selectedUser._id}`,
+            dataToSend,
+            config
+          );
+        }
       } else {
         // Crear nuevo usuario (agregar tenantId)
         dataToSend.tenantId = tenantId;
