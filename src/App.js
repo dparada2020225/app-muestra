@@ -3,6 +3,7 @@ import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Dashboard from './pages/Dashboard/Dashboard';
 import Login from './pages/Login/Login';
+import AuthRedirect from './pages/AuthRedirect/AuthRedirect';
 import Register from './pages/Register/Register';
 import UserManagement from './pages/Admin/UserManagement';
 import TransactionsPage from './pages/Transactions/TransactionsPage';
@@ -120,7 +121,7 @@ function App() {
                 {/* Rutas específicas para el dominio principal (sin tenant) */}
                 <Route path="/register-tenant" element={<Navigate to="/register" replace />} />
                 <Route path="/register" element={<Register isTenantRegistration={true} />} />
-                
+                <Route path="/auth-redirect" element={<AuthRedirect />} />
                 {/* Ruta 404 */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

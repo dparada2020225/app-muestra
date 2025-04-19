@@ -311,16 +311,21 @@ const ImpersonateUser = () => {
       });
   };
   
-  const handleUseToken = () => {
-    // Guardar token actual para poder volver después
-    localStorage.setItem('originalToken', localStorage.getItem('token'));
+const handleUseToken = () => {
+  // Guardar token actual para poder volver después
+  localStorage.setItem('originalToken', localStorage.getItem('token'));
+  
+  // En vez de guardar el token en localStorage antes de redirigir,
+  // vamos a pasarlo como parámetro en la URL
+  if (tenant && tenant.subdomain) {
+    const developmentUrl = `http://${tenant.subdomain}.localhost:3000/auth-redirect?impersonationToken=${encodeURIComponent(token)}`;
     
-    // Establecer token de impersonación
-    localStorage.setItem('token', token);
-    
-    // Redirigir al dashboard
-    window.location.href = `https://${tenant.subdomain}.tuapp.com/products`;
-  };
+    console.log('Redireccionando a:', developmentUrl);
+    window.location.href = developmentUrl;
+  } else {
+    window.location.href = 'http://localhost:3000/products';
+  }
+};
   
   // Verificar si el usuario es un superadmin
   if (!user || user.role !== 'superAdmin') {
