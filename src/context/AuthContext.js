@@ -1,4 +1,4 @@
-// src/context/AuthContext.js
+// src/context/AuthContext.js - con verificación de usuarios inactivos
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -62,6 +62,19 @@ export const AuthProvider = ({ children }) => {
         const res = await axios.get(url);
         console.log("Respuesta de verificación de token:", res.data);
         
+        // Verificar si el usuario está activo
+        if (res.data && res.data.isActive === false) {
+          console.error('El usuario está desactivado');
+          setToken(null);
+          setUser(null);
+          setError('Tu cuenta ha sido desactivada. Por favor, contacta con el administrador.');
+          
+          // Limpiar el token y redirigir al login
+          localStorage.removeItem('token');
+          navigate('/login', { replace: true });
+          return;
+        }
+        
         // Verificar si el usuario pertenece al tenant actual
         if (currentTenant && res.data.tenantId !== currentTenant.id) {
           console.error('El usuario no pertenece a este tenant');
@@ -93,9 +106,9 @@ export const AuthProvider = ({ children }) => {
     };
 
     verifyToken();
-  }, [token, API_URL, currentTenant, getTenantApiUrl]);
+  }, [token, API_URL, currentTenant, getTenantApiUrl, navigate]);
 
-// Función login actualizada con manejo especial para superadmin
+// Función login actualizada con manejo especial para superadmin y verificación de usuario inactivo
 const login = async (username, password) => {
   try {
     setLoading(true);
@@ -142,6 +155,12 @@ const login = async (username, password) => {
     const response = await axios.post(url, loginData, config);
     console.log("Respuesta de login:", response.data);
     
+    // Verificar si el usuario está activo
+    if (response.data.user && response.data.user.isActive === false) {
+      setError('Tu cuenta ha sido desactivada. Por favor, contacta con el administrador.');
+      return false;
+    }
+    
     if (response.data.token) {
       setToken(response.data.token);
       setUser(response.data.user);
@@ -167,7 +186,13 @@ const login = async (username, password) => {
     console.error('Error en login:', error);
     if (error.response) {
       console.error('Respuesta del servidor:', error.response.data);
-      setError(error.response.data.message || error.response.data.error || 'Error al iniciar sesión');
+      
+      // Verificar si el error es por usuario inactivo
+      if (error.response.data && error.response.data.isActive === false) {
+        setError('Tu cuenta ha sido desactivada. Por favor, contacta con el administrador.');
+      } else {
+        setError(error.response.data.message || error.response.data.error || 'Error al iniciar sesión');
+      }
     } else {
       setError('Error de conexión al servidor');
     }
@@ -199,7 +224,8 @@ const login = async (username, password) => {
         // Incluir tenantId en la solicitud si está disponible
         registrationData = { 
           ...userData,
-          ...(currentTenant && { tenantId: currentTenant.id })
+          ...(currentTenant && { tenantId: currentTenant.id }),
+          isActive: true // Asegurar que el usuario nuevo se crea como activo
         };
       }
       

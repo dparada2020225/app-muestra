@@ -1,4 +1,4 @@
-// src/pages/Login/Login.js - con soporte mejorado para superadmin
+// src/pages/Login/Login.js - con soporte mejorado para superadmin y validación de usuario inactivo
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
@@ -154,18 +154,12 @@ const handleSuperAdminLogin = async () => {
     console.log("Respuesta del servidor:", response.status);
     
     if (response.data && response.data.token) {
-      // // Guardar el token en localStorage
-      // localStorage.setItem('token', response.data.token);
+      // Si la respuesta contiene un mensaje sobre usuario inactivo
+      if (response.data.isActive === false) {
+        setFormError('Tu cuenta ha sido desactivada. Por favor, contacta con el administrador.');
+        return false;
+      }
       
-      // // Establecer el token en los headers por defecto
-      // axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
-      
-      // console.log("Login superadmin exitoso, redirigiendo...");
-      
-      // // Redirigir a la página de superadmin
-      // navigate('/super-admin-welcome', { replace: true });
-      // return true;
-
       localStorage.setItem('token', response.data.token);
       axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
 
@@ -182,7 +176,13 @@ const handleSuperAdminLogin = async () => {
     console.error("Error en login de superadmin:", error);
     if (error.response) {
       console.error("Respuesta de error:", error.response.status, error.response.data);
-      setFormError(error.response.data.message || error.response.data.error || `Error ${error.response.status}: Credenciales inválidas`);
+      
+      // Verificar si el error es debido a un usuario inactivo
+      if (error.response.data && error.response.data.isActive === false) {
+        setFormError('Tu cuenta ha sido desactivada. Por favor, contacta con el administrador.');
+      } else {
+        setFormError(error.response.data.message || error.response.data.error || `Error ${error.response.status}: Credenciales inválidas`);
+      }
     } else if (error.request) {
       setFormError('No se recibió respuesta del servidor');
     } else {
@@ -223,6 +223,11 @@ const handleSuperAdminLogin = async () => {
       }
     } catch (error) {
       console.error("Error en login:", error);
+      
+      // Verificar si el error es debido a un usuario inactivo
+      if (error.response && error.response.data && error.response.data.isActive === false) {
+        setFormError('Tu cuenta ha sido desactivada. Por favor, contacta con el administrador.');
+      }
     }
   };
   
